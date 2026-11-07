@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from google import genai
 
@@ -90,7 +90,12 @@ text_splitter = RecursiveCharacterTextSplitter(
 )
 split_docs = text_splitter.split_documents(all_documents)
 
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+#embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+# 改成 Google 雲端輕量 Embeddings：
+embeddings = GoogleGenerativeAIEmbeddings(
+    model="models/text-embedding-004",
+    google_api_key=api_key
+)
 
 vectorstore = Chroma.from_documents(
     documents=split_docs,
