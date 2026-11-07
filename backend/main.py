@@ -86,9 +86,8 @@ def init_rag_system():
 
     # 改用 Google 官方輕量雲端 Embeddings
     embeddings = GoogleGenerativeAIEmbeddings(
-    model="text-embedding-004",
-    google_api_key=api_key,
-    transport="rest"
+        model="models/gemini-embedding-001",
+        google_api_key=api_key
     )
 
     vectorstore = Chroma.from_documents(
