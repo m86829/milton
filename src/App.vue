@@ -61,10 +61,19 @@ const messages = ref<ChatMessage[]>([
   }
 ])
 
+// 加上一個標記，確保每次進網頁只熱身一次
+let hasPrewarmed = false
+
 function toggleChat() {
   isChatOpen.value = !isChatOpen.value
   if (isChatOpen.value) {
     scrollToBottom()
+
+    // 訪客一打開對話視窗，就偷偷在背景發送請求喚醒 Render 伺服器
+    if (!hasPrewarmed) {
+      hasPrewarmed = true
+      fetch('https://milton-rag-api.onrender.com/').catch(() => {})
+    }
   }
 }
 
