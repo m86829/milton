@@ -1,17 +1,32 @@
+/* 全域防呆：預先鎖定右側捲軸槽，避免文章切換或數量較少時頁面左右晃動 */
+html {
+  scrollbar-gutter: stable;
+}
+
 :root {
   --bg-white: #ffffff;
   --text-primary: #111111;
   --text-muted: #767676;
   --border-light: #e5e5e5;
   --accent-hover: #999999;
+  --font-main: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", sans-serif;
 }
 
 body {
   margin: 0;
   background-color: var(--bg-white);
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-main);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 確保所有按鈕、輸入框與表單元件繼承思源黑體 */
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
 }
 
 /* 鋪墊整體的優雅淡入動畫 */
@@ -20,8 +35,15 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* --- 完全復刻：極簡智慧導覽列（橫向排列） --- */
@@ -30,7 +52,7 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 85px; /* 加高導覽列增加氣場 */
+  height: 85px;
   background-color: #ffffff;
   z-index: 2000;
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), border 0.3s ease;
@@ -80,7 +102,7 @@ body {
   background: none;
   border: none;
   color: #111111;
-  font-size: 0.75rem; /* 縮小字體對齊大師感 */
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 1.5px;
   cursor: pointer;
@@ -89,12 +111,12 @@ body {
 }
 
 .nav-menu-horizontal button:hover {
-  opacity: 0.5; /* 懸浮時柔和半透明 */
+  opacity: 0.5;
 }
 
 .nav-menu-horizontal button.active {
   color: #111111;
-  border-bottom: 1px solid #111111; /* 當前分頁加俐落底線 */
+  border-bottom: 1px solid #111111;
 }
 
 /* Instagram 圖示 */
@@ -111,7 +133,7 @@ body {
 
 /* --- 頂部大圖 Banner 樣式 --- */
 .page-banner {
-  margin-top: 85px; /* 留出導覽列高度避免遮擋 */
+  margin-top: 85px;
   width: 100%;
   height: 180px;
   background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1300&q=80');
@@ -142,73 +164,272 @@ body {
   margin: 0;
 }
 
-/* 2. Hero 區塊：純文字、巨大字體、震撼力 */
-.hero-section {
-  max-width: 1300px;
+/* --- 主要內容區全寬配置 --- */
+.main-content {
+  width: 100%;
   margin: 0 auto;
-  padding: 80px 40px 120px 40px;
-  text-align: left;
+  padding: 0;
 }
 
-.hero-title {
-  font-size: 3.5rem;
-  font-weight: 700;
-  line-height: 1.15;
-  color: var(--text-primary);
-  letter-spacing: -1px;
-  margin: 0 0 30px 0;
-  max-width: 900px;
+/* ==========================================================================
+   完全復刻版：高質感交替底色文章列表 (Post List Layout)
+   ========================================================================== */
+
+.home-posts-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.hero-desc {
-  font-size: 1.25rem;
-  line-height: 1.6;
+/* 每一篇文章的獨立大區塊 */
+.post-item {
+  width: 100%;
+  padding: 100px 40px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  background-color: #f7f4eb;
+}
+
+/* 偶數篇自動渲染為純白底色 */
+.post-item:nth-child(even) {
+  background-color: #ffffff;
+}
+
+/* 內容核心寬度限制 */
+.post-inner-content {
+  width: 100%;
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* 發布時間：直接繼承全域字體 */
+.post-meta-time {
+  font-size: 0.75rem;
+  font-weight: 600;
   color: var(--text-muted);
-  max-width: 650px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+/* 文章標題：直接繼承全域字體 */
+.post-title {
+  font-size: 2.2rem;
+  color: var(--text-primary);
+  line-height: 1.35;
+  font-weight: 700;
+  margin: 0 0 35px 0;
+  letter-spacing: -0.5px;
+}
+
+/* 文章內文：直接繼承全域字體 */
+.post-body-text {
+  font-size: 1.15rem;
+  color: #2b2b2b;
+  line-height: 1.8;
+}
+
+.post-body-text p {
+  margin: 0 0 25px 0;
+}
+
+.post-body-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* 內嵌雙欄小卡片 */
+.post-embed-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  width: 100%;
+  margin-top: 35px;
+}
+
+.embed-card {
+  background-color: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 25px;
+}
+
+.embed-card p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #444444;
   margin: 0;
 }
 
-/* 3. 主要內容區 */
-.main-content {
-  max-width: 1300px;
+/* ==========================================================================
+   WORK & PORTFOLIO 雙欄對比與滿版展示樣式
+   ========================================================================== */
+.portfolio-container {
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 40px 100px 40px;
+  padding: 50px 30px 80px;
+  box-sizing: border-box;
 }
 
-/* 關於我區塊：大字體內文 */
-.about-section {
-  max-width: 800px;
-  font-size: 1.5rem;
-  line-height: 1.6;
-  color: var(--text-primary);
-  font-weight: 400;
+.portfolio-header {
+  margin-bottom: 2.5rem;
 }
 
-.about-section p {
-  margin-bottom: 40px;
-}
-
-.about-section strong {
+.portfolio-header .section-title {
+  font-size: 2rem;
   font-weight: 700;
-  border-bottom: 2px solid var(--text-primary);
-  padding-bottom: 2px;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
 }
 
-/* 4. 作品與技術網格：2欄極簡幾何方塊 */
+.portfolio-header .section-desc {
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.projects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3.5rem;
+}
+
+.project-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.project-meta {
+  margin-bottom: 1.5rem;
+}
+
+.project-tags {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.project-tags .tag {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.project-title {
+  font-size: 1.45rem;
+  color: #0f172a;
+  margin: 0 0 0.5rem 0;
+}
+
+.project-summary {
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* 雙欄對比網格 */
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.comparison-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.column-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.column-subtitle {
+  font-size: 0.95rem;
+  color: #475569;
+  margin: 0;
+  font-weight: 600;
+}
+
+.panel-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+}
+
+.before-badge {
+  background: #64748b;
+  color: #ffffff;
+}
+
+.after-badge {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+/* 對比面板外框 (移除多餘 padding，讓 PDF 滿版貼合) */
+.comparison-panel {
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.before-panel {
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+}
+
+.after-panel {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+}
+
+/* 滿版 PDF 檢視器 */
+.doc-preview-frame {
+  width: 100%;
+  height: 540px;
+  border: none;
+  display: block;
+  background-color: #ffffff;
+}
+
+.panel-img-box {
+  width: 100%;
+  height: 540px;
+}
+
+.panel-img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ==========================================================================
+   PORTFOLIO (原技術網格)
+   ========================================================================== */
 .work-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 60px 40px; /* 大跨度的上下左右留白 */
-}
-
-@media (max-width: 768px) {
-  .work-grid {
-    grid-template-columns: 1fr;
-    gap: 40px;
-  }
-  .hero-title {
-    font-size: 2.5rem;
-  }
+  gap: 60px 40px;
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 80px 40px 100px 40px;
+  box-sizing: border-box;
 }
 
 .work-item {
@@ -217,12 +438,11 @@ body {
   cursor: pointer;
 }
 
-/* 模擬作品的幾何預留圖塊（大師最愛用的簡約灰底） */
 .work-preview-box {
   width: 100%;
-  aspect-ratio: 16 / 10; /* 黃金比例比例寬度 */
+  aspect-ratio: 16 / 10;
   background-color: #f5f5f7;
-  border-radius: 0px; /* 完全直角，展現硬派設計感 */
+  border-radius: 0px;
   margin-bottom: 20px;
   transition: opacity 0.3s ease;
   display: flex;
@@ -254,58 +474,22 @@ body {
   color: var(--text-muted);
 }
 
-.work-link {
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  text-decoration: none;
-  font-weight: 600;
-  margin-top: 4px;
-}
-
-.work-link:hover {
-  color: var(--text-muted);
-}
-
-/* 5. 頁腳 */
-.site-footer {
-  max-width: 1300px;
-  margin: 0 auto;
-  padding: 60px 40px;
-  border-top: 1px solid var(--border-light);
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  display: flex;
-  justify-content: space-between;
-}
-
 /* ==========================================================================
-   大師級完全復刻版 ABOUT 頁面樣式
+   ABOUT 頁面樣式
    ========================================================================== */
-
 .about-page-wrapper {
   max-width: 1200px;
   margin: 0 auto;
-  padding-top: 20px;
+  padding: 80px 40px 100px 40px;
+  box-sizing: border-box;
 }
 
-/* 1. PROFILE 區塊：左文右圖 1fr 與 350px 的不對稱高級比例 */
 .about-profile-section {
   display: grid;
   grid-template-columns: 1fr 350px;
   gap: 80px;
   margin-bottom: 80px;
   align-items: start;
-}
-
-@media (max-width: 900px) {
-  .about-profile-section {
-    grid-template-columns: 1fr;
-    gap: 40px;
-  }
-  .profile-right-image {
-    order: -1; /* 手機版時相片自動移到最上方 */
-    max-width: 300px;
-  }
 }
 
 .about-sub-title {
@@ -341,7 +525,6 @@ body {
   margin: 0 0 20px 0;
 }
 
-/* 技術特長橫線欄樣式 */
 .profile-meta-grid {
   display: grid;
   grid-template-columns: 120px 1fr;
@@ -362,7 +545,6 @@ body {
   color: #333333;
 }
 
-/* 復刻下載框 */
 .resume-download-box {
   margin-top: 20px;
 }
@@ -405,7 +587,6 @@ body {
   color: #ffffff;
 }
 
-/* 右側照片方塊（等你有實體照片可以無縫替換） */
 .profile-right-image .image-placeholder-box {
   width: 100%;
   aspect-ratio: 1 / 1.35;
@@ -420,7 +601,6 @@ body {
   border: 1px dashed #e1e1e1;
 }
 
-/* 2. 學經歷分欄網格 */
 .about-grid-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -428,13 +608,6 @@ body {
   padding: 60px 0;
   border-top: 1px solid var(--border-light);
   margin-bottom: 20px;
-}
-
-@media (max-width: 768px) {
-  .about-grid-section {
-    grid-template-columns: 1fr;
-    gap: 40px;
-  }
 }
 
 .timeline-item {
@@ -461,7 +634,6 @@ body {
   color: #444444;
 }
 
-/* 3. 專業技能細節區 */
 .about-skills-section {
   padding: 60px 0;
   border-top: 1px solid var(--border-light);
@@ -485,4 +657,288 @@ body {
   line-height: 1.6;
   color: #444444;
   margin: 0;
+}
+
+/* ==========================================================================
+   全站統一簡潔頁尾 (Footer)
+   ========================================================================== */
+.site-footer {
+  width: 100%;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  border-top: 1px solid var(--border-light);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: 3rem;
+  box-sizing: border-box;
+}
+
+.site-footer p {
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   手機與平板行動端（RWD）
+   ========================================================================== */
+@media (max-width: 768px) {
+  .navbar {
+    height: 65px;
+  }
+
+  .nav-hidden {
+    transform: translateY(-65px);
+  }
+
+  .nav-container {
+    padding: 0 20px;
+  }
+
+  .nav-logo {
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+  }
+
+  .nav-right-side {
+    gap: 15px;
+  }
+
+  .nav-menu-horizontal {
+    gap: 12px;
+  }
+
+  .nav-menu-horizontal button {
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+  }
+
+  .nav-social a {
+    font-size: 1rem;
+  }
+
+  .page-banner {
+    margin-top: 65px;
+    height: 120px;
+  }
+
+  .banner-title {
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+  }
+
+  .post-item {
+    padding: 60px 24px;
+  }
+
+  .post-title {
+    font-size: 1.65rem;
+    margin-bottom: 25px;
+  }
+
+  .post-body-text {
+    font-size: 1.05rem;
+  }
+
+  .post-embed-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* Portfolio 雙欄與網格在手機端轉為單欄 */
+  .comparison-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .doc-preview-frame,
+  .panel-img-box {
+    height: 380px;
+  }
+
+  .work-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 40px 20px;
+  }
+
+  .about-page-wrapper {
+    padding: 40px 20px;
+  }
+
+  .about-profile-section {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    margin-bottom: 40px;
+  }
+
+  .profile-right-image {
+    order: -1;
+    max-width: 300px;
+  }
+
+  .profile-name {
+    font-size: 1.6rem;
+    margin-bottom: 15px;
+  }
+
+  .profile-name .en-name {
+    font-size: 1rem;
+    display: block;
+    margin-left: 0;
+    margin-top: 4px;
+  }
+
+  .profile-description {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin-bottom: 30px;
+  }
+
+  .profile-meta-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 16px 0;
+    margin-bottom: 30px;
+  }
+
+  .about-grid-section {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .resume-action-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 15px;
+  }
+
+  .btn-download {
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .site-footer {
+    padding: 2.5rem 1rem;
+  }
+
+  #ai-chat-widget {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+  }
+
+  #ai-toggle-btn {
+    background-color: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 9999px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    transition: transform 0.2s, background-color 0.2s;
+  }
+
+  #ai-toggle-btn:hover {
+    background-color: #1d4ed8;
+    transform: translateY(-2px);
+  }
+
+  #ai-chat-box {
+    width: 360px;
+    height: 480px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+  }
+
+  #ai-chat-header {
+    background: #2563eb;
+    color: white;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+  }
+
+  #ai-chat-header button {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  #ai-messages {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bot-msg,
+  .user-msg {
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    max-width: 82%;
+    word-break: break-word;
+  }
+
+  .bot-msg {
+    background: #f3f4f6;
+    color: #1f2937;
+    align-self: flex-start;
+    border-bottom-left-radius: 2px;
+  }
+
+  .user-msg {
+    background: #2563eb;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 2px;
+  }
+
+  #ai-chat-input-area {
+    padding: 12px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 8px;
+    background: #fafafa;
+  }
+
+  #ai-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    outline: none;
+    font-size: 13px;
+  }
+
+  #ai-input:focus {
+    border-color: #2563eb;
+  }
+
+  #ai-chat-input-area button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0 16px;
+    cursor: pointer;
+    font-weight: 600;
+  }
 }
