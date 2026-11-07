@@ -2,8 +2,10 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { marked } from 'marked' 
 import AboutView from './components/AboutView.vue'
-import BlogView from './components/BlogView.vue'
+import SolutionsView from './components/SolutionsView.vue'
 import PortfolioView from './components/PortfolioView.vue'
+import PersonalPortfolioView from './components/Personal-PortfolioView.vue'
+import BlogView from './components/BlogView.vue'
 
 function renderMarkdown(content: string) {
   return marked.parse(content)
@@ -53,7 +55,6 @@ const inputMessage = ref('')
 const isLoading = ref(false)
 const chatMessagesRef = ref<HTMLElement | null>(null)
 
-// 1. 初始歡迎訊息 (加上首次喚醒的提示)
 const messages = ref<ChatMessage[]>([
   {
     role: 'assistant',
@@ -61,7 +62,6 @@ const messages = ref<ChatMessage[]>([
   }
 ])
 
-// 加上一個標記，確保每次進網頁只熱身一次
 let hasPrewarmed = false
 
 function toggleChat() {
@@ -69,7 +69,6 @@ function toggleChat() {
   if (isChatOpen.value) {
     scrollToBottom()
 
-    // 訪客一打開對話視窗，就偷偷在背景發送請求喚醒 Render 伺服器
     if (!hasPrewarmed) {
       hasPrewarmed = true
       fetch('https://milton-rag-api.onrender.com/').catch(() => {})
@@ -93,7 +92,6 @@ async function handleSendMessage() {
   isLoading.value = true
   scrollToBottom()
 
-  // 2. 發送請求邏輯 (改為 Render 的 HTTPS 網址)
   try {
     const res = await fetch('https://milton-rag-api.onrender.com/api/chat', {
       method: 'POST',
@@ -156,162 +154,24 @@ async function handleSendMessage() {
 
     <main class="main-content">
       
-      <!-- 1. ABOUT 頁面 (獨立元件引入) -->
+      <!-- 1. ABOUT 頁面 -->
       <div v-if="currentTab === 'about'" class="tab-content">
         <AboutView />
       </div>
 
       <!-- 2. SOLUTIONS 頁面 -->
-      <div v-if="currentTab === 'solutions'" class="tab-content solutions-page-wrapper fade-in">
-        <div class="solutions-header-block">
-          <h2 class="solutions-main-title">讓專業內容被讀懂，讓數位體驗更流暢</h2>
-          <p class="solutions-sub-desc">
-            結合嚴謹的資訊架構重組、視覺引導與現代前端工程，專注為複雜簡報、學術報告與個人專案打造兼具美感與高效能的解答。
-          </p>
-        </div>
-
-        <div class="solutions-grid">
-          <div class="solution-card">
-            <div class="card-num">01</div>
-            <h3 class="solution-card-title">簡報與技術報告視覺重構</h3>
-            <p class="solution-card-desc">
-              針對密集的學術論文、科技部計畫、研究報告進行資訊分層重組。去除多餘贅飾，轉化為邏輯嚴謹、具高閱讀說服力的出版級成果。
-            </p>
-            <div class="solution-points">
-              <span>✦ 階層化資訊提煉</span>
-              <span>✦ 嚴謹視覺對比與易讀性</span>
-              <span>✦ 出版級 PDF / 向量簡報</span>
-            </div>
-          </div>
-
-          <div class="solution-card">
-            <div class="card-num">02</div>
-            <h3 class="solution-card-title">高效能互動前端架構</h3>
-            <p class="solution-card-desc">
-              運用 Vue 3 與現代前端工程實踐，專注處理巨量 DOM、PDF 向量渲染調優、視窗延遲加載（Lazy Load）與滾動流暢度，告別卡頓黑屏。
-            </p>
-            <div class="solution-points">
-              <span>✦ 原生 PDF 嵌入性能優化</span>
-              <span>✦ LRU 記憶體控制策略</span>
-              <span>✦ 響應式流暢微互動體驗</span>
-            </div>
-          </div>
-
-          <div class="solution-card">
-            <div class="card-num">03</div>
-            <h3 class="solution-card-title">自動化工作流與客製工具</h3>
-            <p class="solution-card-desc">
-              善用 AI 協同開發與自動化腳本，協助打造專屬自用工具、內容管線同步（如 Notion API）或批次資料轉換，將重複繁瑣工作降到最低。
-            </p>
-            <div class="solution-points">
-              <span>✦ Notion API 自動化同步</span>
-              <span>✦ 資源批次處理腳本</span>
-              <span>✦ AI 協作敏捷實踐</span>
-            </div>
-          </div>
-        </div>
-
-        <section class="process-section">
-          <h3 class="process-title">COLLABORATION PROCESS / 合作流程</h3>
-          <div class="process-steps">
-            <div class="step-item">
-              <div class="step-badge">STEP 1</div>
-              <h4>需求診斷</h4>
-              <p>盤點現有檔案、目標受眾與核心痛點</p>
-            </div>
-            <div class="step-item">
-              <div class="step-badge">STEP 2</div>
-              <h4>架構規劃</h4>
-              <p>梳理資訊層級、視覺規範或系統架構原型</p>
-            </div>
-            <div class="step-item">
-              <div class="step-badge">STEP 3</div>
-              <h4>精修實作</h4>
-              <p>落實排版打磨、效能調校與邊界測試</p>
-            </div>
-            <div class="step-item">
-              <div class="step-badge">STEP 4</div>
-              <h4>驗收交付</h4>
-              <p>完整檔案交付、原始碼部署與後續支援</p>
-            </div>
-          </div>
-        </section>
-
-        <section class="solutions-contact-cta">
-          <div class="cta-inner-box">
-            <h3>準備好讓你的內容更有影響力了嗎？</h3>
-            <p>無論是學術簡報重構、網頁建置諮詢或技術合作，歡迎隨時與我聯繫交流。</p>
-            <div class="contact-cards-container">
-              <a href="mailto:m8682906@gmail.com" class="contact-card">
-                <div class="card-icon"><i class="far fa-envelope"></i></div>
-                <div class="card-details">
-                  <h3>Mail</h3>
-                  <p>m8682906@gmail.com</p>
-                </div>
-              </a>
-            </div>
-          </div>
-        </section>
+      <div v-if="currentTab === 'solutions'" class="tab-content">
+        <SolutionsView />
       </div>
 
       <!-- 3. WORK PORTFOLIO 頁面 -->
       <div v-if="currentTab === 'home'" class="tab-content fade-in">
-         <PortfolioView />
+        <PortfolioView />
       </div>
 
-      <!-- 4. PERSONAL PORTFOLIO 頁面 -->
-      <div v-if="currentTab === 'portfolio'" class="tab-content work-grid fade-in">
-        <div class="work-item">
-          <div class="work-preview-box" style="background-image: url('/.png'); background-size: cover; background-position: center;"></div>
-          <div class="work-info">
-            <h3>透過AI架免費的個人網站</h3>
-            <div class="work-category">2026/5/26 透過與Gemini對話，從零開始架構網頁。</div>
-          </div>
-        </div>
-
-        <a href="https://forum.gamer.com.tw/C.php?bsn=18966&snA=142042&tnum=1" target="_blank" class="work-item" style="text-decoration: none;">
-          <div class="work-preview-box" style="background-image: url('/巴哈-火炮砲塔封面.png'); background-size: cover; background-position: center;"></div>
-          <div class="work-info">
-            <h3>巴哈姆特論壇 / 流亡黯道遊戲分享自製工具(剛發表)</h3>
-            <div class="work-category">2026/1 手把手分享如何從0開始的攻略，深獲好評(網友留言稱讚我文章像論文)。</div>
-            <div class="work-link" style="margin-top: 4px; font-weight: 600; color: #111111;">閱讀文章 ↗</div>
-          </div>
-        </a>
-
-        <a href="https://forum.gamer.com.tw/C.php?bsn=18966&snA=141076" target="_blank" class="work-item" style="text-decoration: none;">
-          <div class="work-preview-box" style="background-image: url('/巴哈-火炮砲塔封面.png'); background-size: cover; background-position: center;"></div>
-          <div class="work-info">
-            <h3>巴哈姆特論壇 / 流亡黯道遊戲流派發表 獲得552GP(讚)</h3>
-            <div class="work-category">2026/1 手把手分享如何從0開始的攻略(網友稱讚像論文一樣嚴謹)。</div>
-            <div class="work-link" style="margin-top: 4px; font-weight: 600; color: #111111;">閱讀文章 ↗</div>
-          </div>
-        </a>
-
-        <div class="work-item">
-          <div class="work-preview-box" style="background-image: url('/聯盟戰旗- 菁英.png'); background-size: cover; background-position: center;"></div>
-          <div class="work-info">
-            <h3>聯盟戰棋遊戲S14賽季「菁英」(前50玩家)</h3>
-            <div class="work-category">2025/6 與當初FreeFire朋友，達成雙人搭檔模式「菁英」。</div>
-          </div>
-        </div>
-
-        <a href="https://forum.gamer.com.tw/C.php?bsn=18966&snA=132958" target="_blank" class="work-item" style="text-decoration: none;">
-          <div class="work-preview-box" style="background-image: url('/巴哈-3.21彈片砲塔.png'); background-size: cover; background-position: center;"></div>
-          <div class="work-info">
-            <h3>巴哈姆特論壇 / 流亡黯道遊戲流派發表 獲得519GP(讚)</h3>
-            <div class="work-category">2023/8 手把手分享如何從0開始的攻略，廣獲網友好評(普遍文章為60GP左右)。</div>
-            <div class="work-link" style="margin-top: 4px; font-weight: 600; color: #111111;">閱讀文章 ↗</div>
-          </div>
-        </a>
-
-        <a href="https://www.youtube.com/@PinPonChuA" target="_blank" class="work-item" style="text-decoration: none;">
-          <div class="work-preview-box" style="background-image: url('/桌球欸-1200DPI-橫.png'); background-size: cover; background-position: center;"></div>
-          <div class="work-info">
-            <h3>YouTuber / 曾多年為FreeFire遊戲官方名人堂之一</h3>
-            <div class="work-category">2020/9/21創立頻道，2022/1達成6000訂閱，其中一部教學影片現達10萬觀看次數。此頻道旨在分享遊戲的高端技巧(本人曾台服CS模式百大榜第九/勝率85%)。</div>
-            <div class="work-link" style="margin-top: 4px; font-weight: 600; color: #111111;">查看頻道 ↗</div>
-          </div>
-        </a>
+      <!-- 4. PERSONAL PORTFOLIO 頁面 (獨立元件引入) -->
+      <div v-if="currentTab === 'portfolio'" class="tab-content">
+        <PersonalPortfolioView />
       </div>
 
       <!-- 5. BLOG 頁面 -->
@@ -327,10 +187,8 @@ async function handleSendMessage() {
 
     <!-- ==================== Milton AI 懸浮對話助理元件 ==================== -->
     <div class="milton-ai-widget">
-      <!-- 展開後的對話面板 -->
       <transition name="chat-slide">
         <div v-if="isChatOpen" class="milton-chat-card">
-          <!-- 頂部列 -->
           <div class="chat-header">
             <div class="chat-header-title">
               <span class="chat-status-dot"></span>
@@ -342,7 +200,6 @@ async function handleSendMessage() {
             <button class="chat-close-btn" @click="toggleChat" title="關閉視窗">✕</button>
           </div>
 
-          <!-- 對話訊息串流區 -->
           <div ref="chatMessagesRef" class="chat-messages-container">
             <div 
               v-for="(msg, mIdx) in messages" 
@@ -352,7 +209,6 @@ async function handleSendMessage() {
               <div class="chat-bubble markdown-body" v-html="renderMarkdown(msg.content)"></div>
             </div>
 
-            <!-- 載入中動畫 -->
             <div v-if="isLoading" class="chat-bubble-wrapper bubble-bot-wrap">
               <div class="chat-bubble chat-loading">
                 <span class="loading-dot"></span>
@@ -362,7 +218,6 @@ async function handleSendMessage() {
             </div>
           </div>
 
-          <!-- 底部輸入區域 -->
           <div class="chat-input-area">
             <input 
               v-model="inputMessage" 
@@ -382,7 +237,6 @@ async function handleSendMessage() {
         </div>
       </transition>
 
-      <!-- 右下角觸發圓鈕 -->
       <button class="ai-launcher-btn" :class="{ 'btn-active': isChatOpen }" @click="toggleChat">
         <span v-if="!isChatOpen" class="launcher-icon">💬</span>
         <span v-else class="launcher-icon">✕</span>
@@ -663,169 +517,5 @@ async function handleSendMessage() {
     width: calc(100vw - 32px);
     height: 75vh;
   }
-}
-
-/* ==================== SOLUTIONS 頁面樣式 ==================== */
-.solutions-page-wrapper {
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
-}
-
-.solutions-header-block {
-  text-align: center;
-  margin-bottom: 3.5rem;
-}
-
-.solutions-main-title {
-  font-size: 2.2rem;
-  font-weight: 800;
-  color: #123247;
-  margin-bottom: 1rem;
-  letter-spacing: -0.02em;
-}
-
-.solutions-sub-desc {
-  font-size: 1.15rem;
-  color: #475569;
-  line-height: 1.7;
-  max-width: 780px;
-  margin: 0 auto;
-}
-
-.solutions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-bottom: 4rem;
-}
-
-.solution-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 2.2rem 1.8rem;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.solution-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
-}
-
-.card-num {
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: #15803d;
-  margin-bottom: 0.8rem;
-  letter-spacing: 0.05em;
-}
-
-.solution-card-title {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 1rem;
-}
-
-.solution-card-desc {
-  font-size: 0.95rem;
-  color: #64748b;
-  line-height: 1.65;
-  margin-bottom: 1.5rem;
-  flex-grow: 1;
-}
-
-.solution-points {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  padding-top: 1rem;
-  border-top: 1px dashed #e2e8f0;
-}
-
-.solution-points span {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #334155;
-}
-
-.process-section {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
-  padding: 2.5rem 2rem;
-  margin-bottom: 4rem;
-}
-
-.process-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #123247;
-  text-align: center;
-  margin-bottom: 2rem;
-  letter-spacing: 0.04em;
-}
-
-.process-steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-}
-
-.step-item {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem 1.25rem;
-  text-align: center;
-}
-
-.step-badge {
-  display: inline-block;
-  background: #e2e8f0;
-  color: #334155;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.2rem 0.6rem;
-  border-radius: 9999px;
-  margin-bottom: 0.75rem;
-}
-
-.step-item h4 {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 0.5rem;
-}
-
-.step-item p {
-  font-size: 0.85rem;
-  color: #64748b;
-  line-height: 1.5;
-}
-
-.solutions-contact-cta {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 20px;
-  padding: 3rem 2rem;
-  text-align: center;
-}
-
-.cta-inner-box h3 {
-  font-size: 1.7rem;
-  font-weight: 800;
-  color: #0f172a;
-  margin-bottom: 0.6rem;
-}
-
-.cta-inner-box p {
-  font-size: 1rem;
-  color: #475569;
-  margin-bottom: 2rem;
 }
 </style>
