@@ -84,7 +84,7 @@ def init_rag_system():
     )
     split_docs = text_splitter.split_documents(all_documents)
 
-    # 改用 Google 官方輕量雲端 Embeddings
+    # Google 官方輕量雲端 Embeddings
     embeddings = GoogleGenerativeAIEmbeddings(
         model="models/gemini-embedding-001",
         google_api_key=api_key
@@ -159,13 +159,37 @@ def chat(request: ChatRequest):
 問題：{user_query}
 回答："""
 
-        response = client.models.generate_content(
-            model="gemini-3.8-flash",
-            contents=prompt,
-        )
+        # 模型候選清單：由主力到抗塞車輕量化版本依序備援
+        candidate_models = [
+            "gemini-3.8-flash",
+            "gemini-3.7-flash",
+            "gemini-3.6-flash",
+            "gemini-2.0-flash",
+            "gemini-2.5-flash-lite",
+            "gemini-2.0-flash-lite"
+        ]
+
+        response = None
+        for model_name in candidate_models:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
+                if response and response.text:
+                    print(f"✅ 成功調用模型生成回答: {model_name}")
+                    break
+            except Exception as err:
+                print(f"⚠️ 模型 {model_name} 暫時不可用或繁忙 ({err})，自動切換至下一順位模型...")
+                continue
+
+        if not response or not response.text:
+            raise HTTPException(status_code=503, detail="所有可用 AI 模型目前均繁忙，請稍候再試")
 
         return ChatResponse(answer=response.text)
 
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"生成出錯: {e}")
         raise HTTPException(status_code=500, detail=f"AI 生成失敗: {str(e)}")
