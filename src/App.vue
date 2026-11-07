@@ -53,10 +53,11 @@ const inputMessage = ref('')
 const isLoading = ref(false)
 const chatMessagesRef = ref<HTMLElement | null>(null)
 
+// 1. 初始歡迎訊息 (加上首次喚醒的提示)
 const messages = ref<ChatMessage[]>([
   {
     role: 'assistant',
-    content: '您好！我是 Milton 的個人AI助理。您可以詢問我關於 Milton 的學歷、工作經歷、專業專案或遊戲成就等任何問題！'
+    content: '您好！我是 Milton 的個人AI助理。您可以詢問我關於 Milton 的學歷、工作經歷、專業專案等問題！\n\n*(💡 提示：若雲端伺服器處於待機狀態，首次發問需等待約 30~50 秒喚醒，感謝您的耐心等候！)*'
   }
 ])
 
@@ -83,8 +84,9 @@ async function handleSendMessage() {
   isLoading.value = true
   scrollToBottom()
 
+  // 2. 發送請求邏輯 (改為 Render 的 HTTPS 網址)
   try {
-    const res = await fetch('http://127.0.0.1:8000/api/chat', {
+    const res = await fetch('https://milton-rag-api.onrender.com/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -104,7 +106,7 @@ async function handleSendMessage() {
   } catch (err: any) {
     messages.value.push({
       role: 'assistant',
-      content: '目前與 Milton 後端助理連線失敗，請確認後端服務 (Port 8000) 是否已啟動。'
+      content: '目前與雲端 AI 助理連線逾時或失敗，請稍候片刻重新整理後再試一次。'
     })
   } finally {
     isLoading.value = false
