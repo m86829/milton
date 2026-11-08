@@ -1,27 +1,30 @@
 <template>
   <div class="tab-content work-grid fade-in">
-    <div class="work-item">
-      <div class="work-preview-box" style="background-image: url('/.png'); background-size: cover; background-position: center;"></div>
-      <div class="work-info">
-        <h3>透過AI架免費的個人網站</h3>
-        <div class="work-category">2026/5/26 透過與Gemini對話，從零開始架構網頁。</div>
-      </div>
-    </div>
 
     <a href="https://forum.gamer.com.tw/C.php?bsn=18966&snA=142042&tnum=1" target="_blank" class="work-item" style="text-decoration: none;">
-      <div class="work-preview-box" style="background-image: url('/巴哈-火炮砲塔封面.png'); background-size: cover; background-position: center;"></div>
+      <div class="work-preview-box" style="background-image: url('/巴哈-光環計算機頁面.png'); background-size: cover; background-position: center;"></div>
       <div class="work-info">
-        <h3>巴哈姆特論壇 / 流亡黯道遊戲分享自製工具(剛發表)</h3>
-        <div class="work-category">2026/1 手把手分享如何從0開始的攻略，深獲好評(網友留言稱讚我文章像論文)。</div>
+        <h3>流亡黯道遊戲 純自製小工具-光環計算機  巴哈姆特論壇</h3>
+        <div class="work-category">2026/6 將原本excel的檔案，透過與Gemini協作，包裝成網頁形式，利於公開分享。這篇文章開頭提供此工具的網址，後續為教學如何使用。</div>
         <div class="work-link" style="margin-top: 4px; font-weight: 600; color: #111111;">閱讀文章 ↗</div>
       </div>
     </a>
 
+    <a href="https://contrastchecker.pages.dev/" target="_blank" class="work-item" style="text-decoration: none;">
+      <div class="work-preview-box" style="background-image: url('/對比度網站頁面.png'); background-size: cover; background-position: center;"></div>
+      <div class="work-info">
+        <h3> 純自製小工具-快速取得色碼及顏色對比度</h3>
+        <div class="work-category">2026/5 隨著跟Gemini越來越多協作，寫程式或設計常需要使用到6位色碼，乾脆直接做成實用小工具，滴管一點就知道了，快速解決問題。</div>
+        <div class="work-link" style="margin-top: 4px; font-weight: 600; color: #111111;">查看網站 ↗</div>
+      </div>
+    </a>
+
+
     <a href="https://forum.gamer.com.tw/C.php?bsn=18966&snA=141076" target="_blank" class="work-item" style="text-decoration: none;">
       <div class="work-preview-box" style="background-image: url('/巴哈-火炮砲塔封面.png'); background-size: cover; background-position: center;"></div>
       <div class="work-info">
-        <h3>巴哈姆特論壇 / 流亡黯道遊戲流派發表 獲得552GP(讚)</h3>
-        <div class="work-category">2026/1 手把手分享如何從0開始的攻略(網友稱讚像論文一樣嚴謹)。</div>
+        <h3>流亡黯道遊戲 流派發表 獲得552GP(讚)  巴哈姆特論壇</h3>
+        <div class="work-category">2026/1 手把手分享如何從0開始遊玩此流派的攻略，網友稱讚像論文一樣!</div>
         <div class="work-link" style="margin-top: 4px; font-weight: 600; color: #111111;">閱讀文章 ↗</div>
       </div>
     </a>
@@ -37,8 +40,8 @@
     <a href="https://forum.gamer.com.tw/C.php?bsn=18966&snA=132958" target="_blank" class="work-item" style="text-decoration: none;">
       <div class="work-preview-box" style="background-image: url('/巴哈-3.21彈片砲塔.png'); background-size: cover; background-position: center;"></div>
       <div class="work-info">
-        <h3>巴哈姆特論壇 / 流亡黯道遊戲流派發表 獲得519GP(讚)</h3>
-        <div class="work-category">2023/8 手把手分享如何從0開始的攻略，廣獲網友好評(普遍文章為60GP左右)。</div>
+        <h3>流亡黯道遊戲 流派發表 獲得519GP(讚) 巴哈姆特論壇</h3>
+        <div class="work-category">2023/8 手把手分享如何從0開始的攻略，廣獲好評。</div>
         <div class="work-link" style="margin-top: 4px; font-weight: 600; color: #111111;">閱讀文章 ↗</div>
       </div>
     </a>

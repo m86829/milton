@@ -2,8 +2,8 @@ name: 自動同步 Notion 文章
 
 on:
   schedule:
-    # 每 3 小時自動執行一次 (UTC 時間每逢 12 小時整點)
-    - cron: '0 */12 * * *'
+    # 每 24 小時自動執行一次 (UTC 時間每逢 24 小時整點)
+    - cron: '0 */24 * * *'
   # 同時允許你在 GitHub 網頁手動按按鈕觸發
   workflow_dispatch:
 

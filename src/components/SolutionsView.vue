@@ -1,9 +1,9 @@
 <template>
   <div class="solutions-page-wrapper fade-in">
     <div class="solutions-header-block">
-      <h2 class="solutions-main-title">讓專業內容被讀懂，讓數位體驗更流暢</h2>
+      <h2 class="solutions-main-title">我能解決: 專業內容被讀懂、使用者體驗更流暢</h2>
       <p class="solutions-sub-desc">
-        結合嚴謹的資訊架構重組、視覺引導與現代前端工程，專注為複雜簡報、學術報告與個人專案打造兼具美感與高效能的解答。
+        結合嚴謹的資訊架構重組、視覺引導與現代前端工程，專注為複雜簡報、學術報告與個人專案<br>打造兼具美感與高效能的解答。
       </p>
     </div>
 
@@ -17,33 +17,33 @@
         <div class="solution-points">
           <span>✦ 階層化資訊提煉</span>
           <span>✦ 嚴謹視覺對比與易讀性</span>
-          <span>✦ 出版級 PDF / 向量簡報</span>
+          <span>✦ 出版級向量檔/PDF/PPT/WORD等</span>
         </div>
       </div>
 
       <div class="solution-card">
         <div class="card-num">02</div>
-        <h3 class="solution-card-title">高效能互動前端架構</h3>
+        <h3 class="solution-card-title">現代全端與雲端 AI 架構</h3>
         <p class="solution-card-desc">
-          運用 Vue 3 與現代前端工程實踐，專注處理巨量 DOM、PDF 向量渲染調優、視窗延遲加載（Lazy Load）與滾動流暢度，告別卡頓黑屏。
+          精準善用開源工具與免費雲端層（Cloudflare / Render / GitHub），結合 Vue 3 前端工程與 RAG AI 助理。不需額外支付伺服器月租，即可享受全自動同步、極速載入與智慧對話的現代化體驗。
         </p>
         <div class="solution-points">
-          <span>✦ 原生 PDF 嵌入性能優化</span>
-          <span>✦ LRU 記憶體控制策略</span>
-          <span>✦ 響應式流暢微互動體驗</span>
+          <span>✦ 零主機月費 / 零營運成本架構</span>
+          <span>✦ GitHub Actions + Cloudflare 免費整合</span>
+          <span>✦ 輕量級雲端 RAG AI 免費託管實踐</span>
         </div>
       </div>
 
       <div class="solution-card">
         <div class="card-num">03</div>
-        <h3 class="solution-card-title">自動化工作流與客製工具</h3>
+        <h3 class="solution-card-title">Notion自動化工作流</h3>
         <p class="solution-card-desc">
-          善用 AI 協同開發與自動化腳本，協助打造專屬自用工具、內容管線同步（如 Notion API）或批次資料轉換，將重複繁瑣工作降到最低。
+          打造「專注創作、無痛發布」的現代化個人內容生態系。透過 Notion API 與自動化工作流，讓高價值內容的產出與維護毫不費力。簡單來說，只要在Notion撰寫新文章，便會自動更新。
         </p>
         <div class="solution-points">
           <span>✦ Notion API 自動化同步</span>
-          <span>✦ 資源批次處理腳本</span>
-          <span>✦ AI 協作敏捷實踐</span>
+          <span>✦ 輕量敏捷個人工作流建置</span>
+          <span>✦ 免碰程式碼的發布體驗</span>
         </div>
       </div>
     </div>
@@ -54,22 +54,22 @@
         <div class="step-item">
           <div class="step-badge">STEP 1</div>
           <h4>需求診斷</h4>
-          <p>盤點現有檔案、目標受眾與核心痛點</p>
+          <p>盤點現有檔案、目標受眾<br>與核心痛點</p>
         </div>
         <div class="step-item">
           <div class="step-badge">STEP 2</div>
           <h4>架構規劃</h4>
-          <p>梳理資訊層級、視覺規範或系統架構原型</p>
+          <p>梳理資訊層級、視覺規範<br>或系統架構原型</p>
         </div>
         <div class="step-item">
           <div class="step-badge">STEP 3</div>
           <h4>精修實作</h4>
-          <p>落實排版打磨、效能調校與邊界測試</p>
+          <p>落實排版打磨、效能調校<br>與邊界測試</p>
         </div>
         <div class="step-item">
           <div class="step-badge">STEP 4</div>
           <h4>驗收交付</h4>
-          <p>完整檔案交付、原始碼部署與後續支援</p>
+          <p>完整檔案交付、原始碼部署<br>與後續支援</p>
         </div>
       </div>
     </section>
@@ -144,10 +144,10 @@
 }
 
 .card-num {
-  font-size: 1.2rem;
+  font-size: 2.2rem;
   font-weight: 800;
   color: #15803d;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.1rem;
   letter-spacing: 0.05em;
 }
 

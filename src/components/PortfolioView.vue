@@ -1,7 +1,7 @@
 <template>
   <section class="portfolio-container fade-in">
     <div class="portfolio-header">
-      <h2 class="section-title">Work & Projects 精選作品</h2>
+      <h2 class="section-title">精選作品</h2>
       <p class="section-desc">好的排版不只好看，更能讓內容被讀懂~</p>
     </div>
 
@@ -17,106 +17,144 @@
       >
         <!-- 作品基本資訊 -->
         <div class="project-meta">
-          <div class="project-tags">
+          <div class="project-tags" v-if="project.tags && project.tags.length">
             <span v-for="tag in project.tags" :key="tag" class="tag">{{ tag }}</span>
           </div>
           <h3 class="project-title">{{ project.title }}</h3>
-          <p class="project-summary">{{ project.summary }}</p>
+          <p class="project-summary" v-if="project.summary">{{ project.summary }}</p>
         </div>
 
-        <!-- Before / After 左右對照包覆容器 -->
+        <!-- 內容容器：依據是否有 Before 自動切換單欄/雙欄 -->
         <div class="comparison-wrapper">
-          <div class="comparison-grid">
-            <!-- 左側：改之前 (Before) -->
-            <div class="comparison-column">
+          <div class="comparison-grid" :class="{ 'single-column-grid': !hasBefore(project) }">
+            
+            <!-- 左側：改之前 (Before) - 僅在雙欄時顯示 -->
+            <div v-if="hasBefore(project)" class="comparison-column">
               <div class="column-header">
-                <span v-if="project.before.title" class="custom-title">{{ project.before.title }}</span>
+                <span v-if="project.before?.title" class="custom-title">{{ project.before.title }}</span>
                 <span class="badge badge-before">Before 改造前</span>
               </div>
 
               <div class="comparison-panel before-panel">
-                <!-- 1. 底層：PDF iframe (進入視窗預載或已記錄在 LRU 記憶池中時常駐，保留滾動頁碼) -->
-                <iframe 
-                  v-if="isPdfLoaded(project.id) && project.before.pdfUrl" 
-                  :src="formatPdfUrl(project.before.pdfUrl)"
-                  class="doc-preview-frame"
-                ></iframe>
-
-                <!-- 2. 表層縮圖：非當前互動狀態時蓋在 iframe 上 -->
-                <div 
-                  v-if="!projectStates[project.id]?.isActive && project.before.previews && project.before.previews.length > 0"
-                  class="preview-images-box"
-                >
-                  <img 
-                    v-for="(pImg, idx) in project.before.previews" 
-                    :key="idx" 
-                    :src="pImg" 
-                    class="preview-img" 
-                    alt="Preview" 
-                  />
+                <!-- 1. YouTube 影片 -->
+                <div v-if="isYoutube(project.before)" class="video-container">
+                  <iframe 
+                    :src="getYoutubeEmbedUrl(getMediaUrl(project.before))" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    allowfullscreen
+                    class="media-frame"
+                  ></iframe>
                 </div>
 
-                <!-- 單純圖片備援 -->
-                <div v-else-if="!project.before.pdfUrl && project.before.image" class="panel-img-box">
-                  <img :src="project.before.image" :alt="project.before.title" />
+                <!-- 2. PDF 文件預覽 -->
+                <template v-else-if="isPdf(project.before)">
+                  <iframe 
+                    v-if="isPdfLoaded(project.id)" 
+                    :src="formatPdfUrl(getMediaUrl(project.before))"
+                    class="doc-preview-frame"
+                  ></iframe>
+
+                  <!-- 表層多頁縮圖 (未互動時蓋在上方保護效能) -->
+                  <div 
+                    v-if="!projectStates[project.id]?.isActive && project.before?.previews && project.before.previews.length > 0"
+                    class="preview-images-box"
+                  >
+                    <img 
+                      v-for="(pImg, idx) in project.before.previews" 
+                      :key="idx" 
+                      :src="pImg" 
+                      class="preview-img" 
+                      alt="Preview" 
+                    />
+                  </div>
+                </template>
+
+                <!-- 3. 單張圖片 -->
+                <div v-else-if="isImage(project.before)" class="panel-img-box">
+                  <img :src="getMediaUrl(project.before)" :alt="project.before?.title || project.title" />
                 </div>
               </div>
             </div>
 
-            <!-- 右側：改之後 (After) -->
+            <!-- 右側：改之後 (After) / 單欄精選成果 -->
             <div class="comparison-column">
-              <div class="column-header">
-                <span v-if="project.after.title" class="custom-title">{{ project.after.title }}</span>
-                <span class="badge badge-after">After 修改後</span>
+              <div class="column-header" v-if="project.after?.title || hasBefore(project)">
+                <span v-if="project.after?.title" class="custom-title">{{ project.after.title }}</span>
+                <span v-if="hasBefore(project)" class="badge badge-after">After 修改後</span>
               </div>
 
               <div class="comparison-panel after-panel">
-                <!-- 1. 底層：PDF iframe -->
-                <iframe 
-                  v-if="isPdfLoaded(project.id) && project.after.pdfUrl" 
-                  :src="formatPdfUrl(project.after.pdfUrl)"
-                  class="doc-preview-frame"
-                ></iframe>
-
-                <!-- 2. 表層縮圖：非當前互動狀態時蓋在 iframe 上 -->
-                <div 
-                  v-if="!projectStates[project.id]?.isActive && project.after.previews && project.after.previews.length > 0"
-                  class="preview-images-box"
-                >
-                  <img 
-                    v-for="(pImg, idx) in project.after.previews" 
-                    :key="idx" 
-                    :src="pImg" 
-                    class="preview-img" 
-                    alt="Preview" 
-                  />
+                <!-- 1. YouTube 影片 -->
+                <div v-if="isYoutube(project.after)" class="video-container">
+                  <iframe 
+                    :src="getYoutubeEmbedUrl(getMediaUrl(project.after))" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    allowfullscreen
+                    class="media-frame"
+                  ></iframe>
                 </div>
 
-                <!-- 單純圖片備援 -->
-                <div v-else-if="!project.after.pdfUrl && project.after.image" class="panel-img-box">
-                  <img :src="project.after.image" :alt="project.after.title" />
+                <!-- 2. PDF 文件預覽 -->
+                <template v-else-if="isPdf(project.after)">
+                  <iframe 
+                    v-if="isPdfLoaded(project.id)" 
+                    :src="formatPdfUrl(getMediaUrl(project.after))"
+                    class="doc-preview-frame"
+                  ></iframe>
+
+                  <!-- 表層多頁縮圖 (未互動時蓋在上方保護效能) -->
+                  <div 
+                    v-if="!projectStates[project.id]?.isActive && project.after?.previews && project.after.previews.length > 0"
+                    class="preview-images-box"
+                  >
+                    <img 
+                      v-for="(pImg, idx) in project.after.previews" 
+                      :key="idx" 
+                      :src="pImg" 
+                      class="preview-img" 
+                      alt="Preview" 
+                    />
+                  </div>
+                </template>
+
+                <!-- 3. 單張圖片 -->
+                <div v-else-if="isImage(project.after)" class="panel-img-box">
+                  <img :src="getMediaUrl(project.after)" :alt="project.after?.title || project.title" />
                 </div>
               </div>
             </div>
+
           </div>
 
-          <!-- 3-A. 初始遮罩：帶按鈕與說明文字 (從未點擊過時顯示) -->
-          <div 
-            v-if="!projectStates[project.id]?.hasInteracted" 
-            class="global-dark-overlay initial-overlay"
-            @click="handleClickInitial(project.id)"
-          >
-            <div class="overlay-btn-box">
-              <span class="overlay-btn">點擊開啟左右對照</span>
-              <p class="overlay-hint">點擊即可自由對照與翻閱兩份簡報</p>
+          <!-- 遮罩層：只要包含 PDF 文件（無論單欄或雙欄）就提供點擊防誤觸保護 -->
+          <template v-if="hasPdfInProject(project)">
+            <!-- 初始帶按鈕與說明的遮罩 -->
+            <div 
+              v-if="!projectStates[project.id]?.hasInteracted" 
+              class="global-dark-overlay initial-overlay"
+              @click="handleClickInitial(project.id)"
+            >
+              <div class="overlay-btn-box">
+                <span class="overlay-btn">
+                  {{ hasBefore(project) ? '點擊開啟左右對照' : '點擊開啟文件閱覽' }}
+                </span>
+                <p class="overlay-hint">
+                  {{ hasBefore(project) ? '點擊即可自由對照與翻閱兩份簡報' : '點擊即可自由滾動與翻閱文件' }}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <!-- 3-B. 次級遮罩：滑鼠移出後的純黑 50% 遮罩 (無文字無按鈕，滑鼠一碰就自動消失) -->
-          <div 
-            v-else-if="!projectStates[project.id]?.isActive" 
-            class="global-dark-overlay hover-unlock-overlay"
-          ></div>
+            <!-- 次級純淨 50% 黑色遮罩 (滑鼠滑出時保護) -->
+            <div 
+              v-else-if="!projectStates[project.id]?.isActive" 
+              class="global-dark-overlay hover-unlock-overlay"
+            ></div>
+          </template>
+
         </div>
       </div>
     </div>
@@ -128,29 +166,30 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import rawProjects from '../data/projects.json'
 
 interface ComparisonSide {
-  title: string
+  title?: string
   description?: string
   points?: string[]
   image?: string
   pdfUrl?: string
+  url?: string
+  file?: string
   previews?: string[]
 }
 
 interface ProjectItem {
   id: string
   title: string
-  summary: string
-  tags: string[]
-  before: ComparisonSide
+  summary?: string
+  tags?: string[]
+  before?: ComparisonSide
   after: ComparisonSide
 }
 
 const projects = rawProjects as ProjectItem[]
 
-// 管理每組卡片的互動狀態
 interface ProjectState {
-  isActive: boolean      // 當前是否處於「使用者正在互動中」（控制縮圖與遮罩的顯示與隱藏）
-  hasInteracted: boolean // 是否已經被使用者首次點擊解鎖過
+  isActive: boolean
+  hasInteracted: boolean
 }
 
 const projectStates = reactive<Record<string, ProjectState>>({})
@@ -162,35 +201,76 @@ projects.forEach((proj) => {
   }
 })
 
-// --- 記憶池與預載管理 ---
-// 10 個 PDF 即代表 5 組 Before/After 專案
+const getMediaUrl = (side?: ComparisonSide): string => {
+  if (!side) return ''
+  return side.url || side.pdfUrl || side.file || side.image || ''
+}
+
+const isYoutube = (side?: ComparisonSide): boolean => {
+  const url = getMediaUrl(side)
+  return /youtube\.com|youtu\.be/i.test(url)
+}
+
+const isPdf = (side?: ComparisonSide): boolean => {
+  const url = getMediaUrl(side)
+  if (!url || isYoutube(side)) return false
+  return /\.pdf($|[?#])/i.test(url)
+}
+
+const isImage = (side?: ComparisonSide): boolean => {
+  const url = getMediaUrl(side)
+  if (!url || isYoutube(side) || isPdf(side)) return false
+  return /\.(png|jpe?g|webp|gif|svg)($|[?#])/i.test(url) || Boolean(side?.image)
+}
+
+const getYoutubeEmbedUrl = (url: string): string => {
+  if (!url) return ''
+  let videoId = ''
+  if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split(/[?#]/)[0]
+  } else if (url.includes('watch?v=')) {
+    videoId = url.split('watch?v=')[1]?.split(/[&#]/)[0]
+  } else if (url.includes('embed/')) {
+    videoId = url.split('embed/')[1]?.split(/[?#]/)[0]
+  }
+  return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0` : url
+}
+
+const hasBefore = (project: ProjectItem): boolean => {
+  if (!project.before) return false
+  const url = getMediaUrl(project.before)
+  const hasPreviews = project.before.previews && project.before.previews.length > 0
+  return Boolean(url || hasPreviews || project.before.title)
+}
+
+// 判斷該專案中是否含有 PDF（支援單欄與雙欄判斷）
+const hasPdfInProject = (project: ProjectItem): boolean => {
+  const afterHasPdf = isPdf(project.after)
+  const beforeHasPdf = hasBefore(project) && isPdf(project.before)
+  return afterHasPdf || beforeHasPdf
+}
+
+// LRU 記憶池管理
 const MAX_SAVED_PROJECTS = 5 
-// 儲存「有點過且最新」的專案佇列 (LRU)
 const rememberedProjects = ref<string[]>([])
-// 目前視窗內預載中的專案 ID（尚未點擊前暫存）
 const visiblePrefetchProjects = ref<Set<string>>(new Set())
 
-// 判斷該專案底層是否需要渲染 PDF iframe
 const isPdfLoaded = (id: string) => {
   return rememberedProjects.value.includes(id) || visiblePrefetchProjects.value.has(id)
 }
 
-// 首次點擊卡片解鎖：帶有按鈕的遮罩消失，直接自由操作底下的 PDF
 const handleClickInitial = (id: string) => {
   if (!projectStates[id]) return
   projectStates[id].isActive = true
   projectStates[id].hasInteracted = true
 
-  // 移出預載暫存區，正式加入「被記住的 10 個 PDF 清單」
   visiblePrefetchProjects.value.delete(id)
-  
   const index = rememberedProjects.value.indexOf(id)
   if (index !== -1) {
     rememberedProjects.value.splice(index, 1)
   }
   rememberedProjects.value.push(id)
 
-  // 若記住的專案超過 5 組（10 個 PDF），銷毀最舊的一組
   if (rememberedProjects.value.length > MAX_SAVED_PROJECTS) {
     const evictedId = rememberedProjects.value.shift()
     if (evictedId && projectStates[evictedId]) {
@@ -200,27 +280,24 @@ const handleClickInitial = (id: string) => {
   }
 }
 
-// 滑鼠滑入整張卡片：若以前已經解鎖過，直接自動撤除遮罩與縮圖，不需要點擊
 const handleMouseEnter = (id: string) => {
   if (projectStates[id]?.hasInteracted) {
     projectStates[id].isActive = true
   }
 }
 
-// 滑鼠移出整張卡片：立刻蓋回次級黑色遮罩與縮圖，但底層 iframe 完好保留剛剛的滾動進度
 const handleMouseLeave = (id: string) => {
   if (projectStates[id]) {
     projectStates[id].isActive = false
   }
 }
 
-// 格式化 PDF 網址
 const formatPdfUrl = (url?: string) => {
   if (!url) return ''
   return url.includes('#') ? url : `${url}#view=FitH&toolbar=0`
 }
 
-// --- IntersectionObserver：進入可視範圍自動加載，未點擊離開則刪除 ---
+// 視窗偵測
 const cardElements = new Map<string, HTMLElement>()
 let observer: IntersectionObserver | null = null
 
@@ -245,12 +322,10 @@ onMounted(() => {
       if (!targetId) return
 
       if (entry.isIntersecting) {
-        // 卡片進入視窗：如果在記憶池外，則加入預載暫存區
         if (!rememberedProjects.value.includes(targetId)) {
           visiblePrefetchProjects.value.add(targetId)
         }
       } else {
-        // 卡片離開視窗：若未曾被使用者點進去（不在記憶池中），自動刪除釋放記憶體
         if (!rememberedProjects.value.includes(targetId)) {
           visiblePrefetchProjects.value.delete(targetId)
         }
@@ -274,6 +349,7 @@ onUnmounted(() => {
 }
 
 .portfolio-header {
+  text-align: center;
   margin-bottom: 2.5rem;
 }
 
@@ -338,7 +414,6 @@ onUnmounted(() => {
   line-height: 1.5;
 }
 
-/* 雙欄對照整體包覆容器 */
 .comparison-wrapper {
   position: relative;
   width: 100%;
@@ -351,13 +426,20 @@ onUnmounted(() => {
   gap: 1.25rem;
 }
 
+/* 單欄模式 */
+.comparison-grid.single-column-grid {
+  grid-template-columns: 1fr;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
 .column-header {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  margin-bottom: 0.05rem;
+  margin-bottom: 0.5rem;
 }
 
 .custom-title {
@@ -371,7 +453,7 @@ onUnmounted(() => {
   align-items: center;
   padding: 0.45rem 1.15rem;
   border-radius: 9999px;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 700;
   letter-spacing: 0.03em;
 }
@@ -390,7 +472,7 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .comparison-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 }
 
@@ -400,9 +482,10 @@ onUnmounted(() => {
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 520px;
+  height: 580px;
   box-sizing: border-box;
   overflow: hidden;
+  background: #ffffff;
 }
 
 .before-panel {
@@ -415,7 +498,23 @@ onUnmounted(() => {
   border: 1px solid #c8fcdb;
 }
 
-/* 原生向量 PDF iframe (底層) */
+/* YouTube 影片容器 */
+.video-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #000000;
+}
+
+.media-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* 原生向量 PDF iframe */
 .doc-preview-frame {
   position: absolute;
   top: 1.25rem;
@@ -431,7 +530,7 @@ onUnmounted(() => {
   z-index: 1;
 }
 
-/* 表層前兩頁縮圖 */
+/* 表層縮圖 (未解鎖前覆蓋) */
 .preview-images-box {
   position: absolute;
   top: 1.25rem;
@@ -454,21 +553,32 @@ onUnmounted(() => {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-.panel-img-box img {
+/* 圖片容器 */
+.panel-img-box {
   width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.panel-img-box img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
   border-radius: 8px;
-  margin-bottom: 0.75rem;
   border: 1px solid #e2e8f0;
 }
 
-/* ================= 橫跨左右的 50% 黑色半透明遮罩 ================= */
+/* 遮罩樣式 */
 .global-dark-overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.5); /* 50% 黑色半透明 */
+  background: rgba(15, 23, 42, 0.5);
   backdrop-filter: blur(2px);
   border-radius: 14px;
   display: flex;
@@ -478,7 +588,6 @@ onUnmounted(() => {
   transition: opacity 0.25s ease, background 0.25s ease;
 }
 
-/* 初始帶按鈕的遮罩：需要手型游標與懸停反饋 */
 .initial-overlay {
   cursor: pointer;
 }
@@ -515,7 +624,6 @@ onUnmounted(() => {
   letter-spacing: 0.02em;
 }
 
-/* 次級純淨遮罩：無任何文字與按鈕，純作為滑出後的保護層 */
 .hover-unlock-overlay {
   cursor: default;
 }

@@ -49,3 +49,34 @@
 - 個人品牌理念：
   - 座右銘：「做事盡力而為，問心無愧！對於有興趣的事物，會全力研究優化，成為該領域頂尖！」
   - 具備 AI 協同開發實戰經驗，能快速吸收前沿技術並獨立落地成可用產品。
+
+
+## 核心專業技能與技術實踐 (Core Competencies & Engineering Practices)
+
+### 1. 現代前端工程與架構設計 (Frontend Engineering)
+- **核心框架與語言**：熟練掌握 Vue 3（Composition API、`<script setup>`）、TypeScript、HTML5、現代 CSS3[cite: 3]。
+- **元件模組化與重構**：具備將大型單一頁面（如 `App.vue`）拆解為獨立視圖元件（如 `AboutView`、`SolutionsView`、`Personal-PortfolioView`、`PortfolioView`、`BlogView`）的高內聚、低耦合架構能力[cite: 3]。
+- **前端效能調優**：
+  - 專注處理巨量 DOM 渲染優化與視窗延遲載入（Lazy Load）[cite: 3]。
+  - 原生 PDF 向量渲染調優與 LRU 記憶體控制策略[cite: 3]。
+  - 響應式佈局（RWD）、動態微互動體驗與平滑滾動監聽[cite: 3]。
+
+### 2. 雲端 AI 應用與 RAG 系統整合 (Cloud AI & RAG Integration)
+- **專屬 AI 助理落地**：成功打造並整合個人專屬 RAG（檢索增強生成）知識庫助理，支援自然語言問答[cite: 1, 3]。
+- **後端 API 串接與非同步處理**：利用 Python / FastAPI 建置 RAG 後端 API，並部署於 Render 雲端環境[cite: 1, 3]。
+- **冷啟動預熱機制（Prewarm Strategy）**：針對免費雲端伺服器（Render Free Tier）設計前端開啟視窗即自動背景預熱喚醒的優化策略，大幅降低訪客等待延遲[cite: 3]。
+- **Markdown 即時渲染**：整合 `marked` 函式庫，動態解析並渲染 AI 回傳之 Markdown 格式對話內容[cite: 3]。
+
+### 3. 自動化 CI/CD 與無伺服器管線 (Automation & CI/CD Pipelines)
+- **GitHub Actions 自動化工作流**：編寫排程與觸發式工作流（`.github/workflows/`），落實無人值守自動化資料同步與部署[cite: 1, 6]。
+- **內容發布管線（Content Pipeline）**：透過 Notion API 自動拉取最新文章資料庫，自動轉換 Markdown / JSON 格式並下載圖片至靜態資產庫，達成「Notion 寫作、全自動排程同步上線」的高效內容生態系[cite: 1, 7, 10]。
+- **版本控制與衝突解決**：熟練使用 Git 進行分支管理、暫存區提交（Commit）、變基拉取（`git pull --rebase`）及排解衝突，具備規範的本地與遠端版本同步工作流[cite: 12, 15, 16]。
+
+### 4. 零成本架構與邊緣部署 (Zero-Cost Architecture & Cloud Deployment)
+- **邊緣網路託管**：深度整合 Cloudflare Pages 進行靜態前端邊緣部署，實現高並發、極速在全球 CDN 節點分發[cite: 1]。
+- **極致成本控制**：善用平台免費額度（Cloudflare Pages + GitHub Actions + Render Free Tier），在達成零主機固定租金（Zero-Cost）的前提下，建置高可用性、現代化的全端架構[cite: 1, 8]。
+
+### 5. 跨領域資料分析與互動小工具開發 (Tool Development & Data Logic)
+- **邏輯演算轉網頁**：具備將複雜的 Excel 公式、商業或遊戲數值規則，轉化為直覺流暢的客製化網頁計算器與互動工具（如《流亡黯道》光環計算機、流派數值試算）[cite: 13]。
+- **高說服力技術撰寫**：擅長將密集繁複的學術論文、科技部計畫、研究報告或高難度遊戲流派進行「資訊階層化提煉」，產出架構嚴謹、易讀性高的出版級報告與攻略（巴哈姆特論壇流派文章曾獲 500+ GP 肯定）[cite: 3, 13]。
+- **社群經營與內容影響力**：曾經營 YouTube 頻道達 6000 訂閱、單支教學影片累積突破 10 萬次觀看；具備頂尖玩家等級的深度洞察力與策略執行力（《聯盟戰棋》S14 賽季菁英段位、手遊名人堂）[cite: 3, 13]。

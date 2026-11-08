@@ -21,25 +21,24 @@ if (!NOTION_API_KEY) {
 const notion = new Client({ auth: NOTION_API_KEY })
 const n2m = new NotionToMarkdown({ notionClient: notion })
 
-// 建立存放圖片、PDF 與資料檔的資料夾路徑
 const IMAGE_DIR = path.resolve(process.cwd(), 'public/images/notion')
 const PROJECTS_DIR = path.resolve(process.cwd(), 'public/projects')
 const DATA_DIR = path.resolve(process.cwd(), 'src/data')
+const PREVIEWS_DIR = path.resolve(process.cwd(), 'public/previews')
 
 if (!fs.existsSync(IMAGE_DIR)) fs.mkdirSync(IMAGE_DIR, { recursive: true })
 if (!fs.existsSync(PROJECTS_DIR)) fs.mkdirSync(PROJECTS_DIR, { recursive: true })
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
+if (!fs.existsSync(PREVIEWS_DIR)) fs.mkdirSync(PREVIEWS_DIR, { recursive: true })
 
 import * as Canvas from '@napi-rs/canvas'
 import moduleAlias from 'module'
 
-// 1. 補充 Node.js 缺失的瀏覽器繪圖全域物件 (DOMMatrix, Path2D)
 // @ts-ignore
 if (!global.DOMMatrix) global.DOMMatrix = Canvas.DOMMatrix
 // @ts-ignore
 if (!global.Path2D) global.Path2D = Canvas.Path2D
 
-// 2. 告訴 Node.js 把找不到的 'canvas' 導向到 '@napi-rs/canvas'
 // @ts-ignore
 const originalRequire = moduleAlias.prototype.require
 // @ts-ignore
@@ -54,10 +53,6 @@ const { createCanvas } = Canvas
 // @ts-ignore
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js'
 
-const PREVIEWS_DIR = path.resolve(process.cwd(), 'public/previews')
-if (!fs.existsSync(PREVIEWS_DIR)) fs.mkdirSync(PREVIEWS_DIR, { recursive: true })
-
-// 通用工具函式：下載網路檔案存入本機
 function downloadFile(url: string, destPath: string): Promise<void> {
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(destPath)
@@ -88,15 +83,12 @@ function downloadFile(url: string, destPath: string): Promise<void> {
     })
 }
 
-// 自動解析 PDF 前兩頁並儲存為 PNG 圖片
 async function generatePdfPreviews(pdfFilePath: string, baseName: string): Promise<string[]> {
     const previewUrls: string[] = []
-
     try {
         const data = new Uint8Array(fs.readFileSync(pdfFilePath))
         const loadingTask = pdfjsLib.getDocument({ data })
         const pdfDoc = await loadingTask.promise
-
         const pagesToExtract = Math.min(pdfDoc.numPages, 2)
 
         for (let i = 1; i <= pagesToExtract; i++) {
@@ -121,29 +113,60 @@ async function generatePdfPreviews(pdfFilePath: string, baseName: string): Promi
 
             const buffer = canvas.toBuffer('image/png')
             fs.writeFileSync(previewFilePath, buffer)
-            console.log(`    🖼️ 自動生成預覽圖: ${previewFileName}`)
             previewUrls.push(publicUrl)
         }
     } catch (err) {
         console.error(`    ⚠️ 生成 PDF 預覽圖失敗 (${baseName}):`, err)
     }
-
     return previewUrls
 }
 
-// 任務一：同步 Notion 文章 (支援 Subtitle 副標題/摘要)
-async function syncNotionPosts() {
-    if (!NOTION_DATABASE_ID) {
-        console.log('⚠️ 未設定 NOTION_DATABASE_ID，跳過文章同步。')
-        return
+// 輔助函式：解析並下載 Notion File / Link
+async function handleFileProperty(files: any[], prefix: string) {
+    if (!files || files.length === 0) return { mediaUrl: '', previews: [] }
+    const rawUrl = files[0].file?.url || files[0].external?.url
+    if (!rawUrl) return { mediaUrl: '', previews: [] }
+
+    // 1. YouTube 外部連結
+    if (/youtube\.com|youtu\.be/i.test(rawUrl)) {
+        console.log(`  🎬 識別為 YouTube: ${rawUrl}`)
+        return { mediaUrl: rawUrl, previews: [] }
     }
 
+    // 2. 判斷副檔名
+    const cleanUrl = rawUrl.split('?')[0].toLowerCase()
+    let ext = 'pdf'
+    if (cleanUrl.endsWith('.png')) ext = 'png'
+    else if (cleanUrl.endsWith('.jpg') || cleanUrl.endsWith('.jpeg')) ext = 'jpg'
+    else if (cleanUrl.endsWith('.webp')) ext = 'webp'
+
+    const fileName = `${prefix}.${ext}`
+    const localFilePath = path.join(PROJECTS_DIR, fileName)
+    const publicUrl = `/projects/${fileName}`
+
+    try {
+        if (!fs.existsSync(localFilePath)) {
+            console.log(`  📥 下載檔案: ${fileName}`)
+            await downloadFile(rawUrl, localFilePath)
+        } else {
+            console.log(`  ⚡ 本機已存在，跳過下載: ${fileName}`)
+        }
+
+        let previews: string[] = []
+        if (ext === 'pdf') {
+            previews = await generatePdfPreviews(localFilePath, prefix)
+        }
+        return { mediaUrl: publicUrl, previews }
+    } catch (err) {
+        console.error(`  ⚠️ 下載檔案失敗 (${fileName}):`, err)
+        return { mediaUrl: '', previews: [] }
+    }
+}
+
+async function syncNotionPosts() {
+    if (!NOTION_DATABASE_ID) return
     console.log('🔄 開始同步 Notion 文章內容...')
-
-    const response = await notion.databases.query({
-        database_id: NOTION_DATABASE_ID as string,
-    })
-
+    const response = await notion.databases.query({ database_id: NOTION_DATABASE_ID as string })
     const posts = []
 
     for (const page of response.results as any[]) {
@@ -154,8 +177,6 @@ async function syncNotionPosts() {
         const date = page.properties.Date?.date?.start || new Date().toISOString().split('T')[0]
         const status = page.properties.Status?.status?.name || page.properties.Status?.select?.name || 'Done'
 
-        console.log(`📄 正在處理文章: ${title} [${status}]`)
-
         const mdBlocks = await n2m.pageToMarkdown(pageId)
         let mdString = n2m.toMarkdownString(mdBlocks).parent
 
@@ -165,7 +186,6 @@ async function syncNotionPosts() {
 
         while ((match = imgRegex.exec(mdString)) !== null) {
             const imgUrl = match[2]
-
             if (imgUrl.includes('amazonaws.com') || imgUrl.includes('notion.so')) {
                 imgIndex++
                 const ext = imgUrl.split('?')[0].split('.').pop() || 'png'
@@ -174,7 +194,6 @@ async function syncNotionPosts() {
                 const publicUrl = `/images/notion/${filename}`
 
                 try {
-                    console.log(`  📸 正在下載圖片: ${filename}`)
                     await downloadFile(imgUrl, localFilePath)
                     mdString = mdString.replace(imgUrl, publicUrl)
                 } catch (error) {
@@ -183,46 +202,27 @@ async function syncNotionPosts() {
             }
         }
 
-        posts.push({
-            id: pageId,
-            title,
-            subtitle,
-            category,
-            date,
-            status,
-            content: mdString
-        })
+        posts.push({ id: pageId, title, subtitle, category, date, status, content: mdString })
     }
 
-    const outputPath = path.join(DATA_DIR, 'posts.json')
-    fs.writeFileSync(outputPath, JSON.stringify(posts, null, 2), 'utf-8')
-    console.log(`🎉 文章同步完成！共下載 ${posts.length} 篇文章，已儲存至 src/data/posts.json`)
+    fs.writeFileSync(path.join(DATA_DIR, 'posts.json'), JSON.stringify(posts, null, 2), 'utf-8')
+    console.log(`🎉 文章同步完成！共 ${posts.length} 篇`)
 }
 
-// 任務二：同步 Notion Projects 作品集
 async function syncNotionProjects() {
-    if (!NOTION_PROJECTS_DATABASE_ID) {
-        console.log('⚠️ 未設定 NOTION_PROJECTS_DATABASE_ID，跳過作品集同步。')
-        return
-    }
-
+    if (!NOTION_PROJECTS_DATABASE_ID) return
     console.log('\n🔄 開始同步 Notion Projects 作品集...')
 
     const response = await notion.databases.query({
         database_id: NOTION_PROJECTS_DATABASE_ID as string,
-        filter: {
-            property: 'Published',
-            checkbox: {
-                equals: true,
-            },
-        },
+        filter: { property: 'Published', checkbox: { equals: true } },
     })
 
     const projects = []
 
     for (const page of response.results as any[]) {
-        const pageId = page.id
-        const shortId = pageId.replace(/-/g, '').slice(0, 8)
+        // 使用完整無連字號的 page.id 確保每一筆卡片 id 絕對唯一
+        const uniqueId = page.id.replace(/-/g, '')
         const props = page.properties
 
         const title = props.Title?.title?.[0]?.plain_text || '未命名作品'
@@ -233,128 +233,62 @@ async function syncNotionProjects() {
 
         console.log(`📁 正在處理專案: ${title}`)
 
-        let beforePdfUrl = ''
-        let beforePreviews: string[] = []
-        const beforeFiles = props['Before File']?.files
-        if (beforeFiles && beforeFiles.length > 0) {
-            const rawUrl = beforeFiles[0].file?.url || beforeFiles[0].external?.url
-            if (rawUrl) {
-                const safeFileName = `project-${shortId}-before.pdf`
-                const localFilePath = path.join(PROJECTS_DIR, safeFileName)
-                try {
-                    if (fs.existsSync(localFilePath)) {
-                        console.log(`  ⚡ 本機已存在，跳過下載: ${safeFileName}`)
-                    } else {
-                        console.log(`  📥 下載 Before PDF 並自動更名: ${safeFileName}`)
-                        await downloadFile(rawUrl, localFilePath)
-                    }
-                    beforePdfUrl = `/projects/${safeFileName}`
-                    beforePreviews = await generatePdfPreviews(localFilePath, `project-${shortId}-before`)
-                } catch (err) {
-                    console.error(`  ⚠️ Before 檔案下載失敗:`, err)
-                }
-            }
-        }
-
-        let afterPdfUrl = ''
-        let afterPreviews: string[] = []
-        const afterFiles = props['After File']?.files
-        if (afterFiles && afterFiles.length > 0) {
-            const rawUrl = afterFiles[0].file?.url || afterFiles[0].external?.url
-            if (rawUrl) {
-                const safeFileName = `project-${shortId}-after.pdf`
-                const localFilePath = path.join(PROJECTS_DIR, safeFileName)
-                try {
-                    if (fs.existsSync(localFilePath)) {
-                        console.log(`  ⚡ 本機已存在，跳過下載: ${safeFileName}`)
-                    } else {
-                        console.log(`  📥 下載 After PDF 並自動更名: ${safeFileName}`)
-                        await downloadFile(rawUrl, localFilePath)
-                    }
-                    afterPdfUrl = `/projects/${safeFileName}`
-                    afterPreviews = await generatePdfPreviews(localFilePath, `project-${shortId}-after`)
-                } catch (err) {
-                    console.error(`  ⚠️ After 檔案下載失敗:`, err)
-                }
-            }
-        }
+        const beforeData = await handleFileProperty(props['Before File']?.files, `project-${uniqueId}-before`)
+        const afterData = await handleFileProperty(props['After File']?.files, `project-${uniqueId}-after`)
 
         projects.push({
-            id: shortId,
+            id: uniqueId,
             title,
             summary,
             tags,
             before: {
                 title: beforeTitle,
-                pdfUrl: beforePdfUrl,
-                previews: beforePreviews,
+                pdfUrl: beforeData.mediaUrl,
+                url: beforeData.mediaUrl,
+                image: beforeData.mediaUrl,
+                previews: beforeData.previews,
             },
             after: {
                 title: afterTitle,
-                pdfUrl: afterPdfUrl,
-                previews: afterPreviews,
+                pdfUrl: afterData.mediaUrl,
+                url: afterData.mediaUrl,
+                image: afterData.mediaUrl,
+                previews: afterData.previews,
             },
         })
     }
 
-    const outputPath = path.join(DATA_DIR, 'projects.json')
-    fs.writeFileSync(outputPath, JSON.stringify(projects, null, 2), 'utf-8')
-    console.log(`🎉 作品集同步完成！共下載 ${projects.length} 筆專案，已儲存至 src/data/projects.json`)
+    fs.writeFileSync(path.join(DATA_DIR, 'projects.json'), JSON.stringify(projects, null, 2), 'utf-8')
+    console.log(`🎉 作品集同步完成！共 ${projects.length} 筆專案`)
 }
 
-// 任務三：同步 Notion Timeline 時間軸
 async function syncNotionTimeline() {
-    if (!NOTION_TIMELINE_DATABASE_ID) {
-        console.log('⚠️ 未設定 NOTION_TIMELINE_DATABASE_ID，跳過時間軸同步。')
-        return
-    }
-
+    if (!NOTION_TIMELINE_DATABASE_ID) return
     console.log('\n🔄 開始同步 Notion Timeline 時間軸資料...')
 
     const response = await notion.databases.query({
         database_id: NOTION_TIMELINE_DATABASE_ID as string,
-        filter: {
-            property: 'Published',
-            checkbox: {
-                equals: true,
-            },
-        },
+        filter: { property: 'Published', checkbox: { equals: true } },
     })
 
     const timelineItems: any[] = []
 
     for (const page of response.results as any[]) {
         const props = page.properties
-
         const title = props.Title?.title?.[0]?.plain_text || '未命名事件'
         const subtitle = props.Subtitle?.rich_text?.[0]?.plain_text || ''
         const rawType = props.Type?.select?.name?.toLowerCase() || 'point'
         const type = rawType.includes('range') ? 'range' : 'point'
-
-        // 1. 讀取 Notion 的 Color (支援 Text 或 Select 格式)
-        const color = props.Color?.rich_text?.[0]?.plain_text?.trim()
-            || props.Color?.select?.name?.trim()
-            || ''
-
-        // 2. 讀取 Notion 的 Track (支援 Text, Number 或 Select 格式)
-        const rawTrack = props.Track?.rich_text?.[0]?.plain_text
-            ?? props.Track?.number
-            ?? props.Track?.select?.name
-            ?? 1
+        const color = props.Color?.rich_text?.[0]?.plain_text?.trim() || props.Color?.select?.name?.trim() || ''
+        const rawTrack = props.Track?.rich_text?.[0]?.plain_text ?? props.Track?.number ?? props.Track?.select?.name ?? 1
         const track = Number(rawTrack) || 1
+        const category = props.Category?.select?.name || props.Category?.rich_text?.[0]?.plain_text || ''
 
-        // 3. 備援相容 Category (若有的話)
-        const category = props.Category?.select?.name
-            || props.Category?.rich_text?.[0]?.plain_text
-            || ''
-
-        // 處理日期與區間
         const dateObj = props.Date?.date
         const startDate = dateObj?.start || '2026-01-01'
         const endDate = dateObj?.end || null
         const isOngoing = type === 'range' && !endDate
 
-        // 格式化顯示字串 (例：2022.2、2022.2 - 至今)
         const formatYM = (dStr: string) => {
             const parts = dStr.split('-')
             return parts.length >= 2 ? `${parts[0]}.${parseInt(parts[1], 10)}` : dStr
@@ -364,19 +298,12 @@ async function syncNotionTimeline() {
         let dateDisplay = startDisplay
 
         if (type === 'range') {
-            if (isOngoing) {
-                dateDisplay = `${startDisplay} - 至今`
-            } else if (endDate) {
-                dateDisplay = `${startDisplay} - ${formatYM(endDate)}`
-            }
+            if (isOngoing) dateDisplay = `${startDisplay} - 至今`
+            else if (endDate) dateDisplay = `${startDisplay} - ${formatYM(endDate)}`
         }
 
-        // 解析多行重點 (換行切分成陣列)
         const rawPoints = props.Points?.rich_text?.[0]?.plain_text || ''
-        const points = rawPoints
-            .split('\n')
-            .map((line: string) => line.replace(/^[•\-\*]\s*/, '').trim())
-            .filter((line: string) => line.length > 0)
+        const points = rawPoints.split('\n').map((line: string) => line.replace(/^[•\-\*]\s*/, '').trim()).filter((line: string) => line.length > 0)
 
         timelineItems.push({
             id: page.id,
@@ -394,15 +321,11 @@ async function syncNotionTimeline() {
         })
     }
 
-    // 依開始日期由新到舊排序 (降冪)
     timelineItems.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
-
-    const outputPath = path.join(DATA_DIR, 'timeline.json')
-    fs.writeFileSync(outputPath, JSON.stringify(timelineItems, null, 2), 'utf-8')
-    console.log(`🎉 時間軸同步完成！共下載 ${timelineItems.length} 筆資料，已儲存至 src/data/timeline.json`)
+    fs.writeFileSync(path.join(DATA_DIR, 'timeline.json'), JSON.stringify(timelineItems, null, 2), 'utf-8')
+    console.log(`🎉 時間軸同步完成！共 ${timelineItems.length} 筆資料`)
 }
 
-// 主執行流程
 async function main() {
     await syncNotionPosts()
     await syncNotionProjects()

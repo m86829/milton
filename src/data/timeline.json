@@ -11,7 +11,9 @@
     "endDate": null,
     "isOngoing": false,
     "dateDisplay": "2026.6",
-    "points": []
+    "points": [
+      "詳見個人作品集(PERSONAL PORTFOLIO)"
+    ]
   },
   {
     "id": "4103eb21-f1cc-80a8-9b44-f4402a9a454d",
@@ -25,7 +27,9 @@
     "endDate": null,
     "isOngoing": false,
     "dateDisplay": "2026.1",
-    "points": []
+    "points": [
+      "詳見個人作品集(PERSONAL PORTFOLIO)"
+    ]
   },
   {
     "id": "4103eb21-f1cc-8057-ac4c-c2e43c131bd7",
@@ -34,12 +38,14 @@
     "track": 3,
     "category": "",
     "title": "與Gemini 開始頻繁協作",
-    "subtitle": "",
+    "subtitle": "製作此個人網站及實用小工具",
     "startDate": "2026-01-01",
     "endDate": null,
     "isOngoing": true,
     "dateDisplay": "2026.1 - 至今",
-    "points": []
+    "points": [
+      "詳見個人作品集(PERSONAL PORTFOLIO)"
+    ]
   },
   {
     "id": "4103eb21-f1cc-805f-909b-cb1d80c95d35",
@@ -53,7 +59,9 @@
     "endDate": null,
     "isOngoing": false,
     "dateDisplay": "2025.7",
-    "points": []
+    "points": [
+      "詳見個人作品集(PERSONAL PORTFOLIO)"
+    ]
   },
   {
     "id": "4103eb21-f1cc-80db-b2fa-f27b5ea92e82",
@@ -67,7 +75,9 @@
     "endDate": null,
     "isOngoing": false,
     "dateDisplay": "2023.8",
-    "points": []
+    "points": [
+      "詳見個人作品集(PERSONAL PORTFOLIO)"
+    ]
   },
   {
     "id": "4103eb21-f1cc-804e-9a6e-ff193e4965e3",
@@ -81,21 +91,25 @@
     "endDate": null,
     "isOngoing": true,
     "dateDisplay": "2022.3 - 至今",
-    "points": []
+    "points": [
+      "詳見工作作品集(WORK PORTFOLIO)"
+    ]
   },
   {
     "id": "4103eb21-f1cc-80dd-9723-e04a9117ee60",
     "type": "range",
-    "color": "#FFEE00",
+    "color": "#FFDD00",
     "track": 3,
     "category": "",
     "title": "YouTuber 遊戲創作者",
-    "subtitle": "Free Fire CS RANK天梯第9/單部教學影片破10萬觀看",
+    "subtitle": "Free Fire 教學主播/CS RANK天梯第9/單部教學影片破10萬觀看",
     "startDate": "2020-09-21",
     "endDate": "2023-07-09",
     "isOngoing": false,
     "dateDisplay": "2020.9 - 2023.7",
-    "points": []
+    "points": [
+      "詳見個人作品集(PERSONAL PORTFOLIO)"
+    ]
   },
   {
     "id": "4103eb21-f1cc-804b-a7eb-e69a38ac7eae",
