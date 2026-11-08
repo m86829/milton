@@ -10,6 +10,7 @@ interface Post {
   category: string
   date: string
   status: string
+  color?: string  // 新增此欄位
   content: string
 }
 
@@ -38,6 +39,24 @@ const categories = computed(() => {
   })
   return ['全部', ...Array.from(catSet)]
 })
+
+// 建立分類名稱與顏色的對應字典
+const categoryColorMap = computed(() => {
+  const map: Record<string, string> = {
+    '全部': '#ea580c' // 「全部」維持主題橘
+  }
+  posts.value.forEach((p) => {
+    if (p.category && p.color && !map[p.category]) {
+      map[p.category] = p.color
+    }
+  })
+  return map
+})
+
+// 取得分類對應顏色（若未設定則回退為橘色）
+function getCategoryColor(cat: string): string {
+  return categoryColorMap.value[cat] || '#ea580c'
+}
 
 // 依選取分類篩選
 const filteredPosts = computed(() => {
@@ -149,6 +168,10 @@ function scrollToHeading(id: string) {
           :key="cat"
           class="cat-tab-btn"
           :class="{ active: activeCategory === cat }"
+          :style="activeCategory === cat ? {
+            backgroundColor: getCategoryColor(cat),
+            boxShadow: `0 2px 8px ${getCategoryColor(cat)}40`
+          } : {}"
           @click="activeCategory = cat"
         >
           {{ cat }}
@@ -169,7 +192,12 @@ function scrollToHeading(id: string) {
         >
           <!-- 左側欄：適度拉開間距並收窄欄位 -->
           <div class="row-left-col">
-            <span class="row-category">{{ post.category }}</span>
+            <span 
+            class="row-category" 
+            :style="{ color: post.color || '#ea580c' }"
+          >
+            {{ post.category }}
+          </span>
             <span class="row-date">{{ post.date }}</span>
           </div>
 
@@ -213,7 +241,15 @@ function scrollToHeading(id: string) {
       <main class="detail-main-content">
         <header class="detail-header">
           <div class="post-meta">
-            <span class="post-category-tag">{{ currentPost?.category }}</span>
+            <span 
+              class="post-category-tag"
+              :style="{ 
+                backgroundColor: `${currentPost?.color || '#ea580c'}18`, 
+                color: currentPost?.color || '#ea580c' 
+              }"
+            >
+              {{ currentPost?.category }}
+            </span>
             <span class="post-date">{{ currentPost?.date }}</span>
           </div>
           <h1 class="detail-title">{{ currentPost?.title }}</h1>

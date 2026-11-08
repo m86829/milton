@@ -166,7 +166,15 @@ async function handleFileProperty(files: any[], prefix: string) {
 async function syncNotionPosts() {
     if (!NOTION_DATABASE_ID) return
     console.log('🔄 開始同步 Notion 文章內容...')
-    const response = await notion.databases.query({ database_id: NOTION_DATABASE_ID as string })
+    const response = await notion.databases.query({
+        database_id: NOTION_DATABASE_ID as string,
+        filter: {
+            property: 'Status',
+            status: {
+                equals: '完成'
+            }
+        }
+    })
     const posts = []
 
     for (const page of response.results as any[]) {
@@ -176,6 +184,9 @@ async function syncNotionPosts() {
         const category = page.properties.Category?.select?.name || '未分類'
         const date = page.properties.Date?.date?.start || new Date().toISOString().split('T')[0]
         const status = page.properties.Status?.status?.name || page.properties.Status?.select?.name || 'Done'
+
+        // 讀取 Color 屬性（支援 Select 或文字，未設定時給予預設橘色 #ea580c）
+        const color = page.properties.Color?.select?.name || page.properties.Color?.rich_text?.[0]?.plain_text || '#ea580c'
 
         const mdBlocks = await n2m.pageToMarkdown(pageId)
         let mdString = n2m.toMarkdownString(mdBlocks).parent
@@ -202,7 +213,7 @@ async function syncNotionPosts() {
             }
         }
 
-        posts.push({ id: pageId, title, subtitle, category, date, status, content: mdString })
+        posts.push({ id: pageId, title, subtitle, category, date, status, color, content: mdString })
     }
 
     fs.writeFileSync(path.join(DATA_DIR, 'posts.json'), JSON.stringify(posts, null, 2), 'utf-8')
