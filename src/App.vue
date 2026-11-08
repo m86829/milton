@@ -34,7 +34,14 @@ function handleScroll() {
   lastScrollY = currentScrollY
 }
 
-onMounted(() => { window.addEventListener('scroll', handleScroll) })
+onMounted(() => { 
+  window.addEventListener('scroll', handleScroll) 
+  
+  // 網頁載入時，背景偷偷發送輕量請求喚醒 Render 伺服器（不消耗 Gemini API 額度）
+  fetch('https://milton-rag-api.onrender.com/').catch(() => {
+    // 靜默處理，不中斷任何前端運作、不跳錯誤提示
+  })
+})
 onUnmounted(() => { window.removeEventListener('scroll', handleScroll) })
 
 function getBannerTitle(tab: string) {
