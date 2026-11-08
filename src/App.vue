@@ -29,15 +29,15 @@ const currentBannerTitle = computed(() => {
   return tab.toUpperCase()
 })
 
-// 點擊頂部導覽按鈕：平滑滑動到指定分頁
+// 點擊頂部導覽按鈕
 function changeTabByIndex(index: number) {
   activeTabIndex.value = index
   isClickScrolling = true
   
   if (scrollerRef.value) {
-    const targetLeft = index * window.innerWidth
+    const pageWidth = scrollerRef.value.clientWidth // 🌟 使用 clientWidth 消除滾輪差
     scrollerRef.value.scrollTo({
-      left: targetLeft,
+      left: index * pageWidth,
       behavior: 'smooth'
     })
   }
@@ -49,18 +49,13 @@ function changeTabByIndex(index: number) {
   }, 400)
 }
 
-function changeTab(tabName: string) {
-  const idx = tabs.indexOf(tabName)
-  if (idx !== -1) {
-    changeTabByIndex(idx)
-  }
-}
-
-// 監聽橫向滑動：當使用者手指左右滑動吸附完成後，自動更新頂部高亮與標題
+// 橫向滑動監聽
 function handleHorizontalScroll() {
   if (isClickScrolling || !scrollerRef.value) return
   const scrollLeft = scrollerRef.value.scrollLeft
-  const pageWidth = window.innerWidth
+  const pageWidth = scrollerRef.value.clientWidth // 🌟 使用 clientWidth
+  if (pageWidth === 0) return
+
   const newIndex = Math.round(scrollLeft / pageWidth)
   
   if (newIndex >= 0 && newIndex < tabs.length && newIndex !== activeTabIndex.value) {
@@ -304,52 +299,50 @@ async function handleSendMessage() {
 </template>
 
 <style scoped>
-/* 🌟 1. 外層容器：絕不可下 overflow-x: hidden 或 clip，否則會把裡面的水平手勢閹割 */
+/* 🌟 1. 外層布局限制在 100% 寬度 */
 .designer-layout {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
 }
 
-/* 🌟 1. 橫向滾動軌道：明確宣告寬度為 100vw，不讓寬度受子元素影響 */
+/* 橫向容器預設（桌機） */
 .main-scroller-container {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
-  width: 100vw !important;
-  max-width: 100vw !important;
-  overflow-x: scroll !important;
-  overflow-y: hidden !important;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x pan-y !important;
-  overscroll-behavior-x: contain;
-  margin: 0;
-  padding: 0;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden; /* 電腦版平常不需要拖曳捲軸，靠點擊按鈕平移 */
+  overflow-y: visible !important; /* 🌟 核心：桌機版高度隨內容撐開，絕不產生內層垂直滾輪 */
   box-sizing: border-box;
 }
 
-/* 隱藏滾動條 */
-.main-scroller-container::-webkit-scrollbar {
-  display: none;
-}
-.main-scroller-container {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* 🌟 2. 核心修正：每個分頁鎖死為 100vw 物理視窗寬度，5 頁真正攤開成 500vw */
 .swipe-page-pane {
-  flex: 0 0 100vw !important;
-  width: 100vw !important;
-  min-width: 100vw !important;
-  max-width: 100vw !important;
+  flex: 0 0 100% !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
   box-sizing: border-box;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
+  overflow-y: visible !important; /* 🌟 確保分頁內容不產生內部滾輪 */
   overflow-x: hidden;
-  /* 避免各分頁彼此內容高度互相拉扯 */
-  align-self: flex-start;
+}
+
+/* 🌟 只在行動端（手機/平板）開啟手勢水平吸附捲動 */
+@media (max-width: 900px) {
+  .main-scroller-container {
+    overflow-x: scroll !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y !important;
+    overscroll-behavior-x: contain;
+  }
+
+  .swipe-page-pane {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
 }
 
 @media (max-width: 768px) {
