@@ -405,13 +405,16 @@ onUnmounted(() => {
   text-align: center;
   font-weight: 700;
   color: #1f2638;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .project-summary {
   color: #475569;
   font-size: 0.95rem;
-  line-height: 1.5;
+  line-height: 1.7;
+  text-align: center;         /* 1. 水平置中對齊標題 */
+  max-width: 680px;           /* 2. 限制寬度，避免行太長 */
+  margin: 0 auto 1.5rem;      /* 3. 區塊水平置中並保留下方與圖片的間距 */
 }
 
 .comparison-wrapper {
@@ -493,15 +496,32 @@ onUnmounted(() => {
   border: 1px solid #e2e8f0;
 }
 
-.after-panel {
+/* 雙欄模式下維持綠色背景與綠框 */
+.comparison-grid:not(.single-column-grid) .after-panel {
   background: #f0fdf4;
   border: 1px solid #c8fcdb;
+}
+
+/* 單欄模式：預設白底自適應（供圖片、影片使用） */
+.single-column-grid .comparison-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  height: auto;
+  min-height: 420px;
+  padding: 2rem;
+}
+
+/* 單欄若包含 PDF 預覽：直接給予舒適的直式閱讀高度 */
+.single-column-grid .comparison-panel:has(.doc-preview-frame) {
+  height: 760px;
+  padding: 1.25rem;
 }
 
 /* YouTube 影片容器 */
 .video-container {
   width: 100%;
-  height: 100%;
+  aspect-ratio: 16 / 9;      /* 鎖定標準 16:9 黃金比例 */
+  height: auto;              /* 解除原本 height: 100% 的塌陷問題 */
   border-radius: 8px;
   overflow: hidden;
   background-color: #000000;
@@ -565,10 +585,11 @@ onUnmounted(() => {
 
 .panel-img-box img {
   max-width: 100%;
-  max-height: 100%;
+  height: auto;
+  max-height: 650px;
   object-fit: contain;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: none;
 }
 
 /* 遮罩樣式 */

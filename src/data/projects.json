@@ -1,7 +1,7 @@
 [
   {
-    "id": "4123eb21f1cc80758859e566f077a216",
-    "title": "456",
+    "id": "4123eb21f1cc80f9bbe3ed86a6a4e39b",
+    "title": "許楚璇與許志義姐弟聯展紀錄片【荔園】",
     "summary": "",
     "tags": [],
     "before": {
@@ -13,19 +13,16 @@
     },
     "after": {
       "title": "",
-      "pdfUrl": "/projects/project-4123eb21f1cc80758859e566f077a216-after.pdf",
-      "url": "/projects/project-4123eb21f1cc80758859e566f077a216-after.pdf",
-      "image": "/projects/project-4123eb21f1cc80758859e566f077a216-after.pdf",
-      "previews": [
-        "/previews/project-4123eb21f1cc80758859e566f077a216-after-p1.png",
-        "/previews/project-4123eb21f1cc80758859e566f077a216-after-p2.png"
-      ]
+      "pdfUrl": "https://www.youtube.com/watch?v=OCmf5VVcbwE",
+      "url": "https://www.youtube.com/watch?v=OCmf5VVcbwE",
+      "image": "https://www.youtube.com/watch?v=OCmf5VVcbwE",
+      "previews": []
     }
   },
   {
-    "id": "4123eb21f1cc8001829dd7ba032082b8",
-    "title": "123",
-    "summary": "",
+    "id": "4123eb21f1cc80dc9769e2420c9e882d",
+    "title": "VPPIA | 品牌識別與意象拆解之概念提案",
+    "summary": "針對虛擬電廠的跨領域特性進行品牌視覺探索：將字母轉化為太陽能板、儲能電池、EMS管理平台、智慧節點等核心意象。透過三階段迭代提案，彰顯綠能聚合與數位轉型的產業願景。",
     "tags": [],
     "before": {
       "title": "",
@@ -36,16 +33,16 @@
     },
     "after": {
       "title": "",
-      "pdfUrl": "/projects/project-4123eb21f1cc8001829dd7ba032082b8-after.png",
-      "url": "/projects/project-4123eb21f1cc8001829dd7ba032082b8-after.png",
-      "image": "/projects/project-4123eb21f1cc8001829dd7ba032082b8-after.png",
+      "pdfUrl": "/projects/project-4123eb21f1cc80dc9769e2420c9e882d-after.png",
+      "url": "/projects/project-4123eb21f1cc80dc9769e2420c9e882d-after.png",
+      "image": "/projects/project-4123eb21f1cc80dc9769e2420c9e882d-after.png",
       "previews": []
     }
   },
   {
     "id": "4123eb21f1cc80daa236f702eb23952c",
-    "title": "協助老師做成影片",
-    "summary": "",
+    "title": "精剪與節奏修飾，打造舒適的觀看體驗",
+    "summary": "負責全片精剪與後製包裝，消除贅字停頓並優化節奏，搭配精準字幕大幅提升訪談資訊的吸收效率。",
     "tags": [],
     "before": {
       "title": "",
