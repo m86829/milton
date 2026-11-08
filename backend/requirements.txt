@@ -9,3 +9,4 @@ langchain-text-splitters
 langchain-google-genai
 chromadb
 google-genai
+slowapi
