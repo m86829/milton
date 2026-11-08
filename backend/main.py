@@ -145,10 +145,10 @@ class ChatResponse(BaseModel):
 
 @app.post("/api/chat", response_model=ChatResponse)
 @limiter.limit("5/minute")
-def chat(http_req: Request, request: ChatRequest):
+def chat(request: Request, body: ChatRequest):
     global retriever, full_knowledge_text, client
 
-    user_query = request.message.strip()
+    user_query = body.message.strip()
     if not user_query:
         raise HTTPException(status_code=400, detail="問題內容不能為空")
 
