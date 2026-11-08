@@ -1,8 +1,54 @@
 [
   {
+    "id": "4123eb21f1cc807086eed0f3b7884afd",
+    "title": "實務指引｜86頁研究報告排版與資訊架構重塑",
+    "summary": "針對臺灣微電網成本效益分析（CBA）實務指引進行全書排版重構：統籌龐雜公式、三層效益堆疊模型與樹林場域實證數據，建立清晰的目錄層級與專業出版級版面規範。\n\n",
+    "tags": [],
+    "before": {
+      "title": "",
+      "pdfUrl": "/projects/project-4123eb21f1cc807086eed0f3b7884afd-before.pdf",
+      "url": "/projects/project-4123eb21f1cc807086eed0f3b7884afd-before.pdf",
+      "image": "/projects/project-4123eb21f1cc807086eed0f3b7884afd-before.pdf",
+      "previews": [
+        "/previews/project-4123eb21f1cc807086eed0f3b7884afd-before-p1.png",
+        "/previews/project-4123eb21f1cc807086eed0f3b7884afd-before-p2.png"
+      ]
+    },
+    "after": {
+      "title": "",
+      "pdfUrl": "/projects/project-4123eb21f1cc807086eed0f3b7884afd-after.pdf",
+      "url": "/projects/project-4123eb21f1cc807086eed0f3b7884afd-after.pdf",
+      "image": "/projects/project-4123eb21f1cc807086eed0f3b7884afd-after.pdf",
+      "previews": [
+        "/previews/project-4123eb21f1cc807086eed0f3b7884afd-after-p1.png",
+        "/previews/project-4123eb21f1cc807086eed0f3b7884afd-after-p2.png"
+      ]
+    }
+  },
+  {
+    "id": "4123eb21f1cc80b282caf04c2dc77a70",
+    "title": "國科會產學聯盟複審簡報｜視覺與影音全獨立製作",
+    "summary": "獨立包辦簡報視覺重構、資訊圖表設計、動態節奏編排與成片剪輯。將龐雜的產學技術亮點與年度績效指標，轉化為邏輯嚴密、高說服力的審查簡報影音。",
+    "tags": [],
+    "before": {
+      "title": "",
+      "pdfUrl": "",
+      "url": "",
+      "image": "",
+      "previews": []
+    },
+    "after": {
+      "title": "",
+      "pdfUrl": "https://www.youtube.com/watch?v=iw7LrocBaJU",
+      "url": "https://www.youtube.com/watch?v=iw7LrocBaJU",
+      "image": "https://www.youtube.com/watch?v=iw7LrocBaJU",
+      "previews": []
+    }
+  },
+  {
     "id": "4123eb21f1cc80f9bbe3ed86a6a4e39b",
-    "title": "許楚璇與許志義姐弟聯展紀錄片【荔園】",
-    "summary": "",
+    "title": "藝文長篇紀錄片｜全流程單兵獨立製作",
+    "summary": "從現場攝錄影到成片輸出全獨立製作。本紀錄片長達50分鐘，完整呈現貴賓致詞、跨領域藝術對話與現場氛圍。",
     "tags": [],
     "before": {
       "title": "",
