@@ -1,3 +1,17 @@
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-white);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
 /* 全域防呆：預先鎖定右側捲軸槽，避免文章切換或數量較少時頁面左右晃動 */
 html {
   scrollbar-gutter: stable;

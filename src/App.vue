@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { marked } from 'marked' 
 import AboutView from './components/AboutView.vue'
 import SolutionsView from './components/SolutionsView.vue'
@@ -11,17 +11,64 @@ function renderMarkdown(content: string) {
   return marked.parse(content)
 }
 
-// 預設首頁為 WORK PORTFOLIO
-const currentTab = ref('home')
+// 5 個主分頁的順序定義
+const tabs = ['about', 'solutions', 'home', 'portfolio', 'blog']
+const activeTabIndex = ref(0) // 預設為首頁
+
+const scrollerRef = ref<HTMLElement | null>(null)
 const isNavVisible = ref(true)
 let lastScrollY = 0
+let isClickScrolling = false // 避免點擊按鈕平移時與滾動監聽互相干擾
 
-function changeTab(tabName: string) {
-  currentTab.value = tabName
+// 當前頁面的 Banner 標題
+const currentBannerTitle = computed(() => {
+  const tab = tabs[activeTabIndex.value]
+  if (tab === 'home') return 'WORK PORTFOLIO'
+  if (tab === 'portfolio') return 'PERSONAL PORTFOLIO'
+  if (tab === 'solutions') return 'SOLUTIONS & SERVICES'
+  return tab.toUpperCase()
+})
+
+// 點擊頂部導覽按鈕：平滑滑動到指定分頁
+function changeTabByIndex(index: number) {
+  activeTabIndex.value = index
+  isClickScrolling = true
+  
+  if (scrollerRef.value) {
+    const targetLeft = index * window.innerWidth
+    scrollerRef.value.scrollTo({
+      left: targetLeft,
+      behavior: 'smooth'
+    })
+  }
+
   window.scrollTo({ top: 0, behavior: 'smooth' })
+
+  setTimeout(() => {
+    isClickScrolling = false
+  }, 400)
 }
 
-// 智慧偵測滾輪方向
+function changeTab(tabName: string) {
+  const idx = tabs.indexOf(tabName)
+  if (idx !== -1) {
+    changeTabByIndex(idx)
+  }
+}
+
+// 監聽橫向滑動：當使用者手指左右滑動吸附完成後，自動更新頂部高亮與標題
+function handleHorizontalScroll() {
+  if (isClickScrolling || !scrollerRef.value) return
+  const scrollLeft = scrollerRef.value.scrollLeft
+  const pageWidth = window.innerWidth
+  const newIndex = Math.round(scrollLeft / pageWidth)
+  
+  if (newIndex >= 0 && newIndex < tabs.length && newIndex !== activeTabIndex.value) {
+    activeTabIndex.value = newIndex
+  }
+}
+
+// 智慧偵測垂直滾輪方向（向上顯現、向下隱藏導覽列）
 function handleScroll() {
   const currentScrollY = window.scrollY
   if (currentScrollY < 50) {
@@ -37,19 +84,18 @@ function handleScroll() {
 onMounted(() => { 
   window.addEventListener('scroll', handleScroll) 
   
-  // 網頁載入時，背景偷偷發送輕量請求喚醒 Render 伺服器（不消耗 Gemini API 額度）
-  fetch('https://milton-rag-api.onrender.com/').catch(() => {
-    // 靜默處理，不中斷任何前端運作、不跳錯誤提示
-  })
-})
-onUnmounted(() => { window.removeEventListener('scroll', handleScroll) })
+  // 🌟 網頁一打開，定位在最外層的 ABOUT (Left 0)
+  if (scrollerRef.value) {
+    scrollerRef.value.scrollLeft = 0
+  }
 
-function getBannerTitle(tab: string) {
-  if (tab === 'home') return 'WORK PORTFOLIO'
-  if (tab === 'portfolio') return 'PERSONAL PORTFOLIO'
-  if (tab === 'solutions') return 'SOLUTIONS & SERVICES'
-  return tab.toUpperCase()
-}
+  // 背景喚醒 Render 伺服器
+  fetch('https://milton-rag-api.onrender.com/').catch(() => {})
+})
+
+onUnmounted(() => { 
+  window.removeEventListener('scroll', handleScroll) 
+})
 
 // ==================== Milton AI 助理互動邏輯 ====================
 interface ChatMessage {
@@ -134,16 +180,16 @@ async function handleSendMessage() {
     
     <nav class="navbar" :class="{ 'nav-hidden': !isNavVisible, 'nav-scrolled': lastScrollY > 20 }">
       <div class="nav-container">
-        <div class="nav-logo" @click="changeTab('home')">
+        <div class="nav-logo" @click="changeTabByIndex(0)">
           MILTON HSU
         </div>
         <div class="nav-right-side">
           <div class="nav-menu-horizontal">
-            <button :class="{ active: currentTab === 'about' }" @click="changeTab('about')">ABOUT</button>
-            <button :class="{ active: currentTab === 'solutions' }" @click="changeTab('solutions')">SOLUTIONS</button>
-            <button :class="{ active: currentTab === 'home' }" @click="changeTab('home')">WORK PORTFOLIO</button>
-            <button :class="{ active: currentTab === 'portfolio' }" @click="changeTab('portfolio')">PERSONAL PORTFOLIO</button>
-            <button :class="{ active: currentTab === 'blog' }" @click="changeTab('blog')">BLOG</button>
+            <button :class="{ active: activeTabIndex === 0 }" @click="changeTabByIndex(0)">ABOUT</button>
+            <button :class="{ active: activeTabIndex === 1 }" @click="changeTabByIndex(1)">SOLUTIONS</button>
+            <button :class="{ active: activeTabIndex === 2 }" @click="changeTabByIndex(2)">WORK PORTFOLIO</button>
+            <button :class="{ active: activeTabIndex === 3 }" @click="changeTabByIndex(3)">PERSONAL PORTFOLIO</button>
+            <button :class="{ active: activeTabIndex === 4 }" @click="changeTabByIndex(4)">BLOG</button>
           </div>
           <div class="nav-social">
             <a href="https://www.instagram.com/chengyi_hsich" target="_blank"><i class="fab fa-instagram"></i></a>
@@ -155,44 +201,47 @@ async function handleSendMessage() {
     <div class="page-banner">
       <div class="banner-overlay"></div>
       <h1 class="banner-title">
-        {{ getBannerTitle(currentTab) }}
+        {{ currentBannerTitle }}
       </h1>
     </div>
 
-    <main class="main-content">
-      
-      <!-- 1. ABOUT 頁面 -->
-      <div v-if="currentTab === 'about'" class="tab-content">
+    <!-- 🌟 核心：橫向分頁捲軸容器（平排 5 個頁面） -->
+    <main 
+      ref="scrollerRef" 
+      class="main-scroller-container" 
+      @scroll.passive="handleHorizontalScroll"
+    >
+      <!-- 1. ABOUT -->
+      <section class="swipe-page-pane">
         <AboutView />
-      </div>
+      </section>
 
-      <!-- 2. SOLUTIONS 頁面 -->
-      <div v-if="currentTab === 'solutions'" class="tab-content">
+      <!-- 2. SOLUTIONS -->
+      <section class="swipe-page-pane">
         <SolutionsView />
-      </div>
+      </section>
 
-      <!-- 3. WORK PORTFOLIO 頁面 -->
-      <div v-if="currentTab === 'home'" class="tab-content fade-in">
+      <!-- 3. WORK PORTFOLIO -->
+      <section class="swipe-page-pane">
         <PortfolioView />
-      </div>
+      </section>
 
-      <!-- 4. PERSONAL PORTFOLIO 頁面 (獨立元件引入) -->
-      <div v-if="currentTab === 'portfolio'" class="tab-content">
+      <!-- 4. PERSONAL PORTFOLIO -->
+      <section class="swipe-page-pane">
         <PersonalPortfolioView />
-      </div>
+      </section>
 
-      <!-- 5. BLOG 頁面 -->
-      <div v-if="currentTab === 'blog'" class="tab-content blog-page-wrapper fade-in">
+      <!-- 5. BLOG -->
+      <section class="swipe-page-pane blog-page-wrapper">
         <BlogView />
-      </div>
-
+      </section>
     </main>
 
     <footer class="site-footer">
       <div>© 2026 MILTON-HSU All Rights Reserved. 聯絡信箱：m8682906@gmail.com</div>
     </footer>
 
-    <!-- ==================== Milton AI 懸浮對話助理元件 ==================== -->
+    <!-- Milton AI 懸浮對話助理 -->
     <div class="milton-ai-widget">
       <transition name="chat-slide">
         <div v-if="isChatOpen" class="milton-chat-card">
@@ -255,25 +304,54 @@ async function handleSendMessage() {
 </template>
 
 <style scoped>
-
-/* ==================== 全域版面與防溢出保護 ==================== */
+/* 🌟 1. 外層容器：絕不可下 overflow-x: hidden 或 clip，否則會把裡面的水平手勢閹割 */
 .designer-layout {
   width: 100%;
-  /* 🌟 修正 1：移除 max-width: 100vw，改用 100%，避免 vw 計算包含滾輪寬度導致右側溢出 */
   max-width: 100%;
-  /* 🌟 修正 2：明確限制 overflow-y 不生成滾動條，讓整頁垂直滾輪統一由 window 控管 */
-  overflow-x: clip; /* 現代瀏覽器防橫向溢出首選，不觸發多餘 scroll container */
   box-sizing: border-box;
 }
 
-.main-content {
-  width: 100%;
-  max-width: 100%;
+/* 🌟 1. 橫向滾動軌道：明確宣告寬度為 100vw，不讓寬度受子元素影響 */
+.main-scroller-container {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  overflow-x: scroll !important;
+  overflow-y: hidden !important;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y !important;
+  overscroll-behavior-x: contain;
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
-  overflow-x: clip;
 }
 
-/* ==================== 頂部導覽列手機適配 ==================== */
+/* 隱藏滾動條 */
+.main-scroller-container::-webkit-scrollbar {
+  display: none;
+}
+.main-scroller-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 🌟 2. 核心修正：每個分頁鎖死為 100vw 物理視窗寬度，5 頁真正攤開成 500vw */
+.swipe-page-pane {
+  flex: 0 0 100vw !important;
+  width: 100vw !important;
+  min-width: 100vw !important;
+  max-width: 100vw !important;
+  box-sizing: border-box;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  overflow-x: hidden;
+  /* 避免各分頁彼此內容高度互相拉扯 */
+  align-self: flex-start;
+}
+
 @media (max-width: 768px) {
   .navbar {
     width: 100% !important;
@@ -289,8 +367,8 @@ async function handleSendMessage() {
     justify-content: center !important;
     width: 100% !important;
     max-width: 100% !important;
-    margin: 0 !important;        /* 清除桌機版留下的邊界偏移 */
-    padding: 0 !important;       /* 清除桌機版留下的左右內距 */
+    margin: 0 !important;
+    padding: 0 !important;
     gap: 8px !important;
     box-sizing: border-box !important;
   }
@@ -298,7 +376,7 @@ async function handleSendMessage() {
   .nav-logo {
     display: block !important;
     width: 100% !important;
-    text-align: center !important; /* 確保文本以整螢幕寬度為基準居中 */
+    text-align: center !important;
     margin: 0 auto !important;
     padding: 0 !important;
     font-size: 1.15rem !important;
@@ -312,19 +390,17 @@ async function handleSendMessage() {
     justify-content: flex-start;
   }
 
-  /* 核心 3：左右兩側都有舒適的邊界，開頭 ABOUT 不會被截掉，結尾也不貼邊 */
   .nav-menu-horizontal {
     display: flex;
     gap: 12px;
     overflow-x: auto;
     white-space: nowrap;
     width: 100%;
-    padding: 0 22px 4px 22px; /* 上 0, 右 22px, 下 4px, 左 22px */
+    padding: 0 22px 4px 22px;
     box-sizing: border-box;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* 隱藏滾動條維持簡潔 */
   .nav-menu-horizontal::-webkit-scrollbar {
     display: none;
   }
@@ -336,7 +412,6 @@ async function handleSendMessage() {
   }
 }
 
-/* ==================== Milton AI 浮動按鈕與聊天視窗樣式 ==================== */
 .milton-ai-widget {
   position: fixed;
   bottom: 24px;
