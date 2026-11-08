@@ -203,12 +203,14 @@ def chat(request: Request, body: ChatRequest):
 
         # 官方現行可用之模型順序
         candidate_models = [
+            "gemini-1.5-flash-lite",
+            "gemini-2.5-flash-lite",
+            "gemini-1.5-flash",
             "gemini-3.5-flash-lite",
             "gemini-2.5-flash-lite",
             "gemini-3.6-flash-lite",
             "gemini-2.5-flash",         
             "gemini-2.0-flash",
-            "gemini-1.5-flash",
         ]
 
         response = None
