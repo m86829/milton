@@ -2,7 +2,7 @@ import os
 import json
 import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from fastapi import Request
 
 from langchain_community.document_loaders import TextLoader
 from langchain_core.documents import Document
@@ -31,9 +30,12 @@ retriever = None
 full_knowledge_text = ""
 client = None
 
+# 🌟 本地持久化快取目錄
+PERSIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "chroma_db"))
+
 def init_rag_system():
     global retriever, full_knowledge_text, client
-    print("正在載入履歷與 Notion 最新文章並建立向量庫...")
+    print("🔍 正在初始化 RAG 知識庫...")
 
     all_documents = []
 
@@ -84,62 +86,61 @@ def init_rag_system():
 
     full_knowledge_text = "\n\n".join(doc.page_content for doc in all_documents)
 
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=600,
-        chunk_overlap=100
-    )
-    split_docs = text_splitter.split_documents(all_documents)
-
-    # Google 官方輕量雲端 Embeddings
+    # Google 官方 Embeddings
     embeddings = GoogleGenerativeAIEmbeddings(
-        model="models/gemini-embedding-001",
+        model="models/text-embedding-004",  # 使用穩定通用的正式版本
         google_api_key=api_key
     )
 
-    # 🌟 核心防護：分批（每批 8 筆）寫入向量庫，加入請求間隔與 429 自動退避重試
-    batch_size = 8
-    vectorstore = None
-    total_docs = len(split_docs)
-    print(f"📦 開始分批建立向量索引（共 {total_docs} 塊文本）...")
+    # 🌟 核心升級：若本機已有快取，直接讀取現成向量庫，0 次 API 呼叫，瞬間開機！
+    if os.path.exists(PERSIST_DIR) and os.listdir(PERSIST_DIR):
+        print("⚡ 發現本地已有向量庫快取 (chroma_db)，直接秒級載入，略過 API 建立！")
+        vectorstore = Chroma(
+            persist_directory=PERSIST_DIR,
+            embedding_function=embeddings,
+            collection_name="milton_portfolio_knowledge"
+        )
+    else:
+        print("📦 首次建立向量快取，切片並分批寫入本地磁碟...")
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=600,
+            chunk_overlap=100
+        )
+        split_docs = text_splitter.split_documents(all_documents)
+        total_docs = len(split_docs)
 
-    for i in range(0, total_docs, batch_size):
-        batch = split_docs[i:i + batch_size]
-        success = False
-        retry_count = 0
+        vectorstore = Chroma(
+            persist_directory=PERSIST_DIR,
+            embedding_function=embeddings,
+            collection_name="milton_portfolio_knowledge"
+        )
 
-        while not success and retry_count < 5:
-            try:
-                if vectorstore is None:
-                    vectorstore = Chroma.from_documents(
-                        documents=batch,
-                        embedding=embeddings,
-                        collection_name="milton_portfolio_knowledge"
-                    )
-                else:
+        batch_size = 10
+        for i in range(0, total_docs, batch_size):
+            batch = split_docs[i:i + batch_size]
+            retry_count = 0
+            while retry_count < 3:
+                try:
                     vectorstore.add_documents(batch)
-                
-                success = True
-                print(f"  ⚡ 向量進度: {min(i + batch_size, total_docs)}/{total_docs}")
-                time.sleep(0.6)  # 每次請求間隔 0.6 秒，保護每分鐘 API 額度
-
-            except Exception as e:
-                err_msg = str(e)
-                if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
+                    print(f"  ⚡ 向量進度: {min(i + batch_size, total_docs)}/{total_docs}")
+                    time.sleep(0.5)
+                    break
+                except Exception as e:
                     retry_count += 1
-                    wait_sec = 10 * retry_count
-                    print(f"  ⚠️ 達到 Gemini API 頻率限制 (429)，自動暫停 {wait_sec} 秒後重試 (第 {retry_count} 次)...")
-                    time.sleep(wait_sec)
-                else:
-                    print(f"  ❌ 向量建立非預期錯誤: {e}")
-                    raise e
+                    time.sleep(5 * retry_count)
+                    if retry_count == 3:
+                        print(f"⚠️ 略過部分批次: {e}")
+
+        # 寫入磁碟儲存
+        vectorstore.persist()
+        print("💾 向量庫已成功持久化至本地磁碟！")
 
     retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
     client = genai.Client(api_key=api_key)
-    print("✅ RAG 知識庫初始化完畢！")
+    print("✅ RAG 知識庫完全就緒！")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 服務啟動時在背景載入知識庫
     init_rag_system()
     yield
 
@@ -150,7 +151,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# 建立限制器（依訪客 IP 作為限制依據）
+# 限流器
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -158,9 +159,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://milton-hsu.pages.dev",  # 線上正式網域
-        "http://localhost:5173",          # Vite 本機開發環境
-        "http://localhost:3000",          # 備用本機埠號
+        "https://milton-hsu.pages.dev",
+        "http://localhost:5173",
+        "http://localhost:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -201,16 +202,11 @@ def chat(request: Request, body: ChatRequest):
 【參考資料】：
 {context_text}"""
 
-        # 官方現行可用之模型順序
+        # 🌟 採用穩定正式的官方模型名稱
         candidate_models = [
-            "gemini-1.5-flash-lite",
-            "gemini-2.5-flash-lite",
             "gemini-1.5-flash",
-            "gemini-3.5-flash-lite",
-            "gemini-2.5-flash-lite",
-            "gemini-3.6-flash-lite",
-            "gemini-2.5-flash",         
-            "gemini-2.0-flash",
+            "gemini-1.5-flash-8b",
+            "gemini-1.5-pro",
         ]
 
         response = None
@@ -228,7 +224,7 @@ def chat(request: Request, body: ChatRequest):
                     print(f"✅ 成功調用模型生成回答: {model_name}")
                     break
             except Exception as err:
-                print(f"⚠️ 模型 {model_name} 暫時不可用或繁忙 ({err})，自動切換至下一順位模型...")
+                print(f"⚠️ 模型 {model_name} 暫時不可用 ({err})，自動切換至下一順位模型...")
                 continue
 
         if not response or not response.text:
