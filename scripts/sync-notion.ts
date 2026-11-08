@@ -5,6 +5,8 @@ import path from 'path'
 import https from 'https'
 import http from 'http'
 import dotenv from 'dotenv'
+import puppeteer from 'puppeteer'
+import { pathToFileURL } from 'url'
 
 dotenv.config()
 
@@ -30,28 +32,6 @@ if (!fs.existsSync(IMAGE_DIR)) fs.mkdirSync(IMAGE_DIR, { recursive: true })
 if (!fs.existsSync(PROJECTS_DIR)) fs.mkdirSync(PROJECTS_DIR, { recursive: true })
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
 if (!fs.existsSync(PREVIEWS_DIR)) fs.mkdirSync(PREVIEWS_DIR, { recursive: true })
-
-import * as Canvas from '@napi-rs/canvas'
-import moduleAlias from 'module'
-
-// @ts-ignore
-if (!global.DOMMatrix) global.DOMMatrix = Canvas.DOMMatrix
-// @ts-ignore
-if (!global.Path2D) global.Path2D = Canvas.Path2D
-
-// @ts-ignore
-const originalRequire = moduleAlias.prototype.require
-// @ts-ignore
-moduleAlias.prototype.require = function (id: string, ...args: any[]) {
-    if (id === 'canvas') return Canvas
-    // @ts-ignore
-    return originalRequire.apply(this, [id, ...args])
-}
-
-const { createCanvas } = Canvas
-
-// @ts-ignore
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js'
 
 function downloadFile(url: string, destPath: string): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -83,41 +63,119 @@ function downloadFile(url: string, destPath: string): Promise<void> {
     })
 }
 
+// 使用 Chrome + 瀏覽器內建 PDF.js 進行精確「單頁」繪製與截圖
 async function generatePdfPreviews(pdfFilePath: string, baseName: string): Promise<string[]> {
     const previewUrls: string[] = []
+    const p1File = `${baseName}-p1.png`
+    const p2File = `${baseName}-p2.png`
+    const p1Path = path.join(PREVIEWS_DIR, p1File)
+    const p2Path = path.join(PREVIEWS_DIR, p2File)
+
+    // 防重複快取機制：兩頁縮圖都存在時直接略過
+    if (fs.existsSync(p1Path) && fs.existsSync(p2Path)) {
+        return [`/previews/${p1File}`, `/previews/${p2File}`]
+    }
+
+    let browser = null
     try {
-        const data = new Uint8Array(fs.readFileSync(pdfFilePath))
-        const loadingTask = pdfjsLib.getDocument({ data })
-        const pdfDoc = await loadingTask.promise
-        const pagesToExtract = Math.min(pdfDoc.numPages, 2)
+        console.log(`    🚀 啟動 Chrome 精準渲染單頁縮圖: ${baseName}...`)
+        browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        })
+        const page = await browser.newPage()
 
-        for (let i = 1; i <= pagesToExtract; i++) {
-            const previewFileName = `${baseName}-p${i}.png`
-            const previewFilePath = path.join(PREVIEWS_DIR, previewFileName)
-            const publicUrl = `/previews/${previewFileName}`
+        // 讀取本機 PDF 檔案為 Base64
+        const pdfBase64 = fs.readFileSync(pdfFilePath).toString('base64')
 
-            if (fs.existsSync(previewFilePath)) {
+        // 載入一個內嵌 PDF.js 的輕量 HTML 頁面
+        const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { background: transparent; }
+            canvas { display: block; }
+          </style>
+        </head>
+        <body>
+          <canvas id="pdf-canvas"></canvas>
+          <script>
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            let pdfDoc = null;
+
+            async function initPdf(base64Data) {
+              const raw = atob(base64Data);
+              const uint8Array = new Uint8Array(raw.length);
+              for (let i = 0; i < raw.length; i++) {
+                uint8Array[i] = raw.charCodeAt(i);
+              }
+              pdfDoc = await pdfjsLib.getDocument({
+                data: uint8Array,
+                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+                cMapPacked: true
+              }).promise;
+              return pdfDoc.numPages;
+            }
+
+            async function renderSinglePage(pageNum) {
+              const page = await pdfDoc.getPage(pageNum);
+              const rotation = page.rotate || 0;
+              const viewport = page.getViewport({ scale: 2.0, rotation });
+              const canvas = document.getElementById('pdf-canvas');
+              const ctx = canvas.getContext('2d');
+              canvas.width = viewport.width;
+              canvas.height = viewport.height;
+              
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+              await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+              return { width: viewport.width, height: viewport.height };
+            }
+          </script>
+        </body>
+        </html>
+        `
+
+        await page.setContent(htmlContent, { waitUntil: 'load' })
+        const totalPages = await page.evaluate((b64) => (window as any).initPdf(b64), pdfBase64)
+        const pagesToExtract = Math.min(totalPages, 2)
+
+        for (let pageNum = 1; pageNum <= pagesToExtract; pageNum++) {
+            const currentFileName = `${baseName}-p${pageNum}.png`
+            const currentFilePath = path.join(PREVIEWS_DIR, currentFileName)
+            const publicUrl = `/previews/${currentFileName}`
+
+            if (fs.existsSync(currentFilePath)) {
                 previewUrls.push(publicUrl)
                 continue
             }
 
-            const page = await pdfDoc.getPage(i)
-            const viewport = page.getViewport({ scale: 1.5 })
-            const canvas = createCanvas(viewport.width, viewport.height)
-            const context = canvas.getContext('2d')
+            // 在瀏覽器記憶體中畫出該頁
+            await page.evaluate((p) => (window as any).renderSinglePage(p), pageNum)
 
-            await page.render({
-                canvasContext: context as any,
-                viewport: viewport
-            }).promise
-
-            const buffer = canvas.toBuffer('image/png')
-            fs.writeFileSync(previewFilePath, buffer)
-            previewUrls.push(publicUrl)
+            // 精確抓取 Canvas 節點進行截圖（100% 邊界吻合，無多餘留白或跨頁）
+            const canvasElement = await page.$('#pdf-canvas')
+            if (canvasElement) {
+                await canvasElement.screenshot({
+                    path: currentFilePath,
+                    type: 'png'
+                })
+                console.log(`    🖼️ 成功產生精準單頁截圖: ${currentFileName} (第 ${pageNum} 頁)`)
+                previewUrls.push(publicUrl)
+            }
         }
     } catch (err) {
-        console.error(`    ⚠️ 生成 PDF 預覽圖失敗 (${baseName}):`, err)
+        console.error(`    ⚠️ Chrome 截圖失敗 (${baseName}):`, err)
+    } finally {
+        if (browser) {
+            await browser.close()
+        }
     }
+
     return previewUrls
 }
 
@@ -185,7 +243,6 @@ async function syncNotionPosts() {
         const date = page.properties.Date?.date?.start || new Date().toISOString().split('T')[0]
         const status = page.properties.Status?.status?.name || page.properties.Status?.select?.name || 'Done'
 
-        // 讀取 Color 屬性（支援 Select 或文字，未設定時給予預設橘色 #ea580c）
         const color = page.properties.Color?.select?.name || page.properties.Color?.rich_text?.[0]?.plain_text || '#ea580c'
 
         const mdBlocks = await n2m.pageToMarkdown(pageId)
@@ -232,7 +289,6 @@ async function syncNotionProjects() {
     const projects = []
 
     for (const page of response.results as any[]) {
-        // 使用完整無連字號的 page.id 確保每一筆卡片 id 絕對唯一
         const uniqueId = page.id.replace(/-/g, '')
         const props = page.properties
 

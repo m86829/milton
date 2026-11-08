@@ -28,7 +28,7 @@
         <div class="comparison-wrapper">
           <div class="comparison-grid" :class="{ 'single-column-grid': !hasBefore(project) }">
             
-            <!-- 左側：改之前 (Before) - 僅在雙欄時顯示 -->
+            <!-- 左側：改之前 (Before) -->
             <div v-if="hasBefore(project)" class="comparison-column">
               <div class="column-header">
                 <span v-if="project.before?.title" class="custom-title">{{ project.before.title }}</span>
@@ -50,19 +50,56 @@
 
                 <!-- 2. PDF 文件預覽 -->
                 <template v-else-if="isPdf(project.before)">
+                  <!-- 手機版：使用 vue-pdf-embed 畫布與分頁控制器 -->
+                  <div v-if="isMobile" class="pdf-render-box">
+                    <vue-pdf-embed 
+                      v-if="isPdfLoaded(project.id)"
+                      :source="getMediaUrl(project.before)" 
+                      :page="pdfPages[project.id + '-before'] || 1"
+                      @loaded="onPdfLoaded($event, project.id + '-before')"
+                      class="custom-pdf-canvas"
+                    />
+                    <div class="pdf-pagination-bar" v-if="isPdfLoaded(project.id) && pdfTotalPages[project.id + '-before'] > 1">
+                      <button 
+                        class="jump-btn"
+                        title="倒退 5 頁"
+                        :disabled="(pdfPages[project.id + '-before'] || 1) <= 1"
+                        @click.stop="jumpPrev5Pages(project.id + '-before')"
+                      >⏪</button>
+                      <button 
+                        :disabled="(pdfPages[project.id + '-before'] || 1) <= 1"
+                        @click.stop="prevPdfPage(project.id + '-before')"
+                      >◀</button>
+                      <span class="page-indicator">
+                        {{ pdfPages[project.id + '-before'] || 1 }} / {{ pdfTotalPages[project.id + '-before'] }}
+                      </span>
+                      <button 
+                        :disabled="(pdfPages[project.id + '-before'] || 1) >= pdfTotalPages[project.id + '-before']"
+                        @click.stop="nextPdfPage(project.id + '-before')"
+                      >▶</button>
+                      <button 
+                        class="jump-btn"
+                        title="前進 5 頁"
+                        :disabled="(pdfPages[project.id + '-before'] || 1) >= pdfTotalPages[project.id + '-before']"
+                        @click.stop="jumpNext5Pages(project.id + '-before')"
+                      >⏩</button>
+                    </div>
+                  </div>
+
+                  <!-- 電腦版：維持原生 iframe 預覽 -->
                   <iframe 
-                    v-if="isPdfLoaded(project.id)" 
+                    v-else-if="isPdfLoaded(project.id)" 
                     :src="formatPdfUrl(getMediaUrl(project.before))"
                     class="doc-preview-frame"
                   ></iframe>
 
-                  <!-- 表層多頁縮圖 (未互動時蓋在上方保護效能) -->
+                  <!-- 表層多頁縮圖 (未互動前墊在黑色遮罩底下) -->
                   <div 
-                    v-if="!projectStates[project.id]?.isActive && project.before?.previews && project.before.previews.length > 0"
+                    v-if="!projectStates[project.id]?.isActive && getPreviews(project.before).length > 0"
                     class="preview-images-box"
                   >
                     <img 
-                      v-for="(pImg, idx) in project.before.previews" 
+                      v-for="(pImg, idx) in getPreviews(project.before)" 
                       :key="idx" 
                       :src="pImg" 
                       class="preview-img" 
@@ -78,7 +115,7 @@
               </div>
             </div>
 
-            <!-- 右側：改之後 (After) / 單欄精選成果 -->
+            <!-- 右側：改之後 (After) -->
             <div class="comparison-column">
               <div class="column-header" v-if="project.after?.title || hasBefore(project)">
                 <span v-if="project.after?.title" class="custom-title">{{ project.after.title }}</span>
@@ -100,19 +137,56 @@
 
                 <!-- 2. PDF 文件預覽 -->
                 <template v-else-if="isPdf(project.after)">
+                  <!-- 手機版：使用 vue-pdf-embed 畫布與分頁控制器 -->
+                  <div v-if="isMobile" class="pdf-render-box">
+                    <vue-pdf-embed 
+                      v-if="isPdfLoaded(project.id)"
+                      :source="getMediaUrl(project.after)" 
+                      :page="pdfPages[project.id + '-after'] || 1"
+                      @loaded="onPdfLoaded($event, project.id + '-after')"
+                      class="custom-pdf-canvas"
+                    />
+                    <div class="pdf-pagination-bar" v-if="isPdfLoaded(project.id) && pdfTotalPages[project.id + '-after'] > 1">
+                      <button 
+                        class="jump-btn"
+                        title="倒退 5 頁"
+                        :disabled="(pdfPages[project.id + '-after'] || 1) <= 1"
+                        @click.stop="jumpPrev5Pages(project.id + '-after')"
+                      >⏪</button>
+                      <button 
+                        :disabled="(pdfPages[project.id + '-after'] || 1) <= 1"
+                        @click.stop="prevPdfPage(project.id + '-after')"
+                      >◀</button>
+                      <span class="page-indicator">
+                        {{ pdfPages[project.id + '-after'] || 1 }} / {{ pdfTotalPages[project.id + '-after'] }}
+                      </span>
+                      <button 
+                        :disabled="(pdfPages[project.id + '-after'] || 1) >= pdfTotalPages[project.id + '-after']"
+                        @click.stop="nextPdfPage(project.id + '-after')"
+                      >▶</button>
+                      <button 
+                        class="jump-btn"
+                        title="前進 5 頁"
+                        :disabled="(pdfPages[project.id + '-after'] || 1) >= pdfTotalPages[project.id + '-after']"
+                        @click.stop="jumpNext5Pages(project.id + '-after')"
+                      >⏩</button>
+                    </div>
+                  </div>
+
+                  <!-- 電腦版：維持原生 iframe 預覽 -->
                   <iframe 
-                    v-if="isPdfLoaded(project.id)" 
+                    v-else-if="isPdfLoaded(project.id)" 
                     :src="formatPdfUrl(getMediaUrl(project.after))"
                     class="doc-preview-frame"
                   ></iframe>
 
-                  <!-- 表層多頁縮圖 (未互動時蓋在上方保護效能) -->
+                  <!-- 表層多頁縮圖 (未互動前墊在黑色遮罩底下) -->
                   <div 
-                    v-if="!projectStates[project.id]?.isActive && project.after?.previews && project.after.previews.length > 0"
+                    v-if="!projectStates[project.id]?.isActive && getPreviews(project.after).length > 0"
                     class="preview-images-box"
                   >
                     <img 
-                      v-for="(pImg, idx) in project.after.previews" 
+                      v-for="(pImg, idx) in getPreviews(project.after)" 
                       :key="idx" 
                       :src="pImg" 
                       class="preview-img" 
@@ -130,9 +204,8 @@
 
           </div>
 
-          <!-- 遮罩層：只要包含 PDF 文件（無論單欄或雙欄）就提供點擊防誤觸保護 -->
+          <!-- 遮罩層：防誤觸保護 -->
           <template v-if="hasPdfInProject(project)">
-            <!-- 初始帶按鈕與說明的遮罩 -->
             <div 
               v-if="!projectStates[project.id]?.hasInteracted" 
               class="global-dark-overlay initial-overlay"
@@ -148,7 +221,6 @@
               </div>
             </div>
 
-            <!-- 次級純淨 50% 黑色遮罩 (滑鼠滑出時保護) -->
             <div 
               v-else-if="!projectStates[project.id]?.isActive" 
               class="global-dark-overlay hover-unlock-overlay"
@@ -163,7 +235,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import VuePdfEmbed from 'vue-pdf-embed'
+import * as pdfjsLib from 'pdfjs-dist'
 import rawProjects from '../data/projects.json'
+
+// 配置 pdfjs worker（相容 Vite 本機與打包環境）
+if (typeof window !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '3.11.174'}/pdf.worker.min.js`
+}
 
 interface ComparisonSide {
   title?: string
@@ -185,7 +264,7 @@ interface ProjectItem {
   after: ComparisonSide
 }
 
-const projects = rawProjects as ProjectItem[]
+const projects = reactive<ProjectItem[]>(JSON.parse(JSON.stringify(rawProjects)))
 
 interface ProjectState {
   isActive: boolean
@@ -200,6 +279,46 @@ projects.forEach((proj) => {
     hasInteracted: false
   }
 })
+
+// 即時判斷螢幕寬度（<= 768px 為手機版）
+const isMobile = ref(false)
+const checkMobile = () => {
+  if (typeof window !== 'undefined') {
+    isMobile.value = window.innerWidth <= 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+  }
+}
+
+// 頁碼管理
+const pdfPages = reactive<Record<string, number>>({})
+const pdfTotalPages = reactive<Record<string, number>>({})
+
+const onPdfLoaded = (pdfDoc: any, key: string) => {
+  pdfTotalPages[key] = pdfDoc.numPages || 1
+  if (!pdfPages[key]) pdfPages[key] = 1
+}
+
+const prevPdfPage = (key: string) => {
+  if ((pdfPages[key] || 1) > 1) {
+    pdfPages[key]--
+  }
+}
+
+const nextPdfPage = (key: string) => {
+  if ((pdfPages[key] || 1) < (pdfTotalPages[key] || 1)) {
+    pdfPages[key] = (pdfPages[key] || 1) + 1
+  }
+}
+
+const jumpPrev5Pages = (key: string) => {
+  const current = pdfPages[key] || 1
+  pdfPages[key] = Math.max(1, current - 5)
+}
+
+const jumpNext5Pages = (key: string) => {
+  const current = pdfPages[key] || 1
+  const total = pdfTotalPages[key] || 1
+  pdfPages[key] = Math.min(total, current + 5)
+}
 
 const getMediaUrl = (side?: ComparisonSide): string => {
   if (!side) return ''
@@ -243,11 +362,63 @@ const hasBefore = (project: ProjectItem): boolean => {
   return Boolean(url || hasPreviews || project.before.title)
 }
 
-// 判斷該專案中是否含有 PDF（支援單欄與雙欄判斷）
 const hasPdfInProject = (project: ProjectItem): boolean => {
   const afterHasPdf = isPdf(project.after)
   const beforeHasPdf = hasBefore(project) && isPdf(project.before)
   return afterHasPdf || beforeHasPdf
+}
+
+const formatPdfUrl = (url?: string) => {
+  if (!url) return ''
+  return url.includes('#') ? url : `${url}#view=FitH&toolbar=0`
+}
+
+// 取得縮圖陣列
+const getPreviews = (side?: ComparisonSide): string[] => {
+  if (!side) return []
+  return side.previews || []
+}
+
+// ==================== 自動從 PDF 擷取前 2 頁生成縮圖 ====================
+const autoGeneratePdfPreviews = async () => {
+  for (const project of projects) {
+    const sides: (ComparisonSide | undefined)[] = [project.before, project.after]
+    for (const side of sides) {
+      if (!side) continue
+      // 若已有指定 previews 則跳過，若無且為 PDF 則自動擷取前兩頁
+      if ((!side.previews || side.previews.length === 0) && isPdf(side)) {
+        const pdfUrl = getMediaUrl(side)
+        if (!pdfUrl) continue
+
+        try {
+          const loadingTask = pdfjsLib.getDocument(pdfUrl)
+          const pdfDoc = await loadingTask.promise
+          const maxPages = Math.min(2, pdfDoc.numPages)
+          const generatedImages: string[] = []
+
+          for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+            const page = await pdfDoc.getPage(pageNum)
+            const viewport = page.getViewport({ scale: 1.5 })
+            const canvas = document.createElement('canvas')
+            const ctx = canvas.getContext('2d')
+            canvas.width = viewport.width
+            canvas.height = viewport.height
+
+            if (ctx) {
+              await page.render({ canvasContext: ctx, viewport }).promise
+              generatedImages.push(canvas.toDataURL('image/jpeg', 0.85))
+            }
+          }
+
+          if (generatedImages.length > 0) {
+            side.previews = generatedImages
+          }
+        } catch (err) {
+          console.warn(`[AutoPreview] 產生縮圖失敗 (${pdfUrl}):`, err)
+        }
+      }
+    }
+  }
 }
 
 // LRU 記憶池管理
@@ -292,11 +463,6 @@ const handleMouseLeave = (id: string) => {
   }
 }
 
-const formatPdfUrl = (url?: string) => {
-  if (!url) return ''
-  return url.includes('#') ? url : `${url}#view=FitH&toolbar=0`
-}
-
 // 視窗偵測
 const cardElements = new Map<string, HTMLElement>()
 let observer: IntersectionObserver | null = null
@@ -310,6 +476,12 @@ const setCardRef = (id: string, el: any) => {
 }
 
 onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+
+  // 網頁載入時啟動背景縮圖自動生成
+  autoGeneratePdfPreviews()
+
   observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       let targetId = ''
@@ -337,6 +509,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
   observer?.disconnect()
 })
 </script>
@@ -412,9 +585,9 @@ onUnmounted(() => {
   color: #475569;
   font-size: 0.95rem;
   line-height: 1.7;
-  text-align: center;         /* 1. 水平置中對齊標題 */
-  max-width: 680px;           /* 2. 限制寬度，避免行太長 */
-  margin: 0 auto 1.5rem;      /* 3. 區塊水平置中並保留下方與圖片的間距 */
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 1.5rem;
 }
 
 .comparison-wrapper {
@@ -429,7 +602,6 @@ onUnmounted(() => {
   gap: 1.25rem;
 }
 
-/* 單欄模式 */
 .comparison-grid.single-column-grid {
   grid-template-columns: 1fr;
   max-width: 860px;
@@ -473,12 +645,6 @@ onUnmounted(() => {
   border: 1px solid #15803d;
 }
 
-@media (max-width: 768px) {
-  .comparison-grid {
-    grid-template-columns: 1fr !important;
-  }
-}
-
 .comparison-panel {
   border-radius: 12px;
   padding: 1.25rem;
@@ -496,13 +662,11 @@ onUnmounted(() => {
   border: 1px solid #e2e8f0;
 }
 
-/* 雙欄模式下維持綠色背景與綠框 */
 .comparison-grid:not(.single-column-grid) .after-panel {
   background: #f0fdf4;
   border: 1px solid #c8fcdb;
 }
 
-/* 單欄模式：預設白底自適應（供圖片、影片使用） */
 .single-column-grid .comparison-panel {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -511,30 +675,7 @@ onUnmounted(() => {
   padding: 2rem;
 }
 
-/* 單欄若包含 PDF 預覽：直接給予舒適的直式閱讀高度 */
-.single-column-grid .comparison-panel:has(.doc-preview-frame) {
-  height: 760px;
-  padding: 1.25rem;
-}
-
-/* YouTube 影片容器 */
-.video-container {
-  width: 100%;
-  aspect-ratio: 16 / 9;      /* 鎖定標準 16:9 黃金比例 */
-  height: auto;              /* 解除原本 height: 100% 的塌陷問題 */
-  border-radius: 8px;
-  overflow: hidden;
-  background-color: #000000;
-}
-
-.media-frame {
-  width: 100%;
-  height: 100%;
-  border: none;
-  display: block;
-}
-
-/* 原生向量 PDF iframe */
+/* 電腦端原生向量 PDF iframe */
 .doc-preview-frame {
   position: absolute;
   top: 1.25rem;
@@ -550,7 +691,111 @@ onUnmounted(() => {
   z-index: 1;
 }
 
-/* 表層縮圖 (未解鎖前覆蓋) */
+/* 手機端 PDF 自適應渲染容器 */
+.pdf-render-box {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.custom-pdf-canvas {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.custom-pdf-canvas :deep(canvas) {
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+
+/* 翻頁控制器條 */
+.pdf-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(18, 50, 71, 0.92);
+  color: #ffffff;
+  border-radius: 9999px;
+  margin-top: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  position: sticky;
+  bottom: 8px;
+  z-index: 5;
+  backdrop-filter: blur(4px);
+}
+
+.pdf-pagination-bar button {
+  background: #ffffff;
+  color: #123247;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, opacity 0.2s ease, background 0.2s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pdf-pagination-bar button:active:not(:disabled) {
+  transform: scale(0.9);
+  background: #e2e8f0;
+}
+
+.pdf-pagination-bar button.jump-btn {
+  font-size: 0.82rem;
+  background: #f1f5f9;
+}
+
+.pdf-pagination-bar button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.pdf-pagination-bar .page-indicator {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0 6px;
+  min-width: 64px;
+  text-align: center;
+}
+
+/* YouTube 影片容器 */
+.video-container {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #000000;
+}
+
+.media-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* 表層縮圖容器 (雙頁預覽圖垂直排列，墊在黑色遮罩底層) */
 .preview-images-box {
   position: absolute;
   top: 1.25rem;
@@ -560,7 +805,7 @@ onUnmounted(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   z-index: 2;
   background: inherit;
 }
@@ -656,5 +901,96 @@ onUnmounted(() => {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==================== 手機端專屬響應式 (RWD) ==================== */
+@media (max-width: 768px) {
+  .portfolio-container {
+    padding: 1.5rem 1rem 3rem !important;
+    overflow-x: hidden !important;
+  }
+
+  .section-title {
+    font-size: 1.8rem !important;
+  }
+  .section-desc {
+    font-size: 1rem !important;
+    padding: 0 0.5rem;
+  }
+
+  .project-card {
+    padding: 1.25rem 0.75rem !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+  }
+
+  .project-title {
+    font-size: 1.35rem !important;
+    line-height: 1.35;
+    word-break: break-word !important;
+  }
+
+  /* 雙欄轉橫向軌道：單一卡寬 + 左右滑動 + 自動吸附邊界 */
+  .comparison-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 14px !important;
+    padding-bottom: 8px !important;
+  }
+
+  .comparison-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .comparison-column {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    scroll-snap-align: start !important;
+    box-sizing: border-box !important;
+  }
+
+  .comparison-panel {
+    height: 520px !important;
+    max-height: 70vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 0.75rem !important;
+  }
+
+  /* 🌟 修正：當面板內部包含 YouTube 影片時，取消 520px 固定高度，自適應 16:9 比例 */
+  .comparison-panel:has(.video-container) {
+    height: auto !important;
+    min-height: unset !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0.5rem !important;
+  }
+
+  /* 🌟 修正：單欄無 Before 模式（如精選影片簡報），解除固定高度與置中 */
+  .single-column-grid .comparison-panel {
+    height: auto !important;
+    min-height: unset !important;
+    padding: 0.75rem !important;
+  }
+
+  .preview-images-box {
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
 }
 </style>

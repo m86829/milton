@@ -26,3 +26,22 @@ backend/.env
 *.njsproj
 *.sln
 *.sw?
+
+# 1. 絕不能上傳的金鑰環境變數
+.env
+.env.local
+.env.*.local
+
+# 2. 相依套件與建置輸出
+node_modules
+dist
+dist-ssr
+*.local
+
+# 3. 系統或編輯器暫存
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# 4. 快取與大檔（若不需要上傳 PDF 與生成圖片，建議忽略；若想將 previews 一起部署則可保留）
+# public/projects/*.pdf

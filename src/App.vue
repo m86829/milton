@@ -255,6 +255,85 @@ async function handleSendMessage() {
 </template>
 
 <style scoped>
+
+/* ==================== 全域版面與防溢出保護 ==================== */
+.designer-layout {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden; /* 核心防線：強制禁止任何內容往右撐出橫向捲軸 */
+  box-sizing: border-box;
+}
+
+.main-content {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* ==================== 頂部導覽列手機適配 ==================== */
+@media (max-width: 768px) {
+  .navbar {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding: 10px 0 6px 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .nav-container {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;        /* 清除桌機版留下的邊界偏移 */
+    padding: 0 !important;       /* 清除桌機版留下的左右內距 */
+    gap: 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  .nav-logo {
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important; /* 確保文本以整螢幕寬度為基準居中 */
+    margin: 0 auto !important;
+    padding: 0 !important;
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.05em;
+  }
+
+  .nav-right-side {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  /* 核心 3：左右兩側都有舒適的邊界，開頭 ABOUT 不會被截掉，結尾也不貼邊 */
+  .nav-menu-horizontal {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    white-space: nowrap;
+    width: 100%;
+    padding: 0 22px 4px 22px; /* 上 0, 右 22px, 下 4px, 左 22px */
+    box-sizing: border-box;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 隱藏滾動條維持簡潔 */
+  .nav-menu-horizontal::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-menu-horizontal button {
+    font-size: 0.82rem;
+    padding: 4px 6px;
+    flex-shrink: 0;
+  }
+}
+
 /* ==================== Milton AI 浮動按鈕與聊天視窗樣式 ==================== */
 .milton-ai-widget {
   position: fixed;
