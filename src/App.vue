@@ -259,8 +259,10 @@ async function handleSendMessage() {
 /* ==================== 全域版面與防溢出保護 ==================== */
 .designer-layout {
   width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden; /* 核心防線：強制禁止任何內容往右撐出橫向捲軸 */
+  /* 🌟 修正 1：移除 max-width: 100vw，改用 100%，避免 vw 計算包含滾輪寬度導致右側溢出 */
+  max-width: 100%;
+  /* 🌟 修正 2：明確限制 overflow-y 不生成滾動條，讓整頁垂直滾輪統一由 window 控管 */
+  overflow-x: clip; /* 現代瀏覽器防橫向溢出首選，不觸發多餘 scroll container */
   box-sizing: border-box;
 }
 
@@ -268,7 +270,7 @@ async function handleSendMessage() {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* ==================== 頂部導覽列手機適配 ==================== */
