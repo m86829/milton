@@ -20,9 +20,10 @@ body {
 }
 
 
-/* 全域防呆：預先鎖定右側捲軸槽，避免文章切換或數量較少時頁面左右晃動 */
+/* 全域滾動設定：確保單一主垂直捲軸，防止水平意外溢出 */
 html {
-  scrollbar-gutter: stable;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 :root {

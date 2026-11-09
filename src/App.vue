@@ -20,6 +20,12 @@ const isNavVisible = ref(true)
 let lastScrollY = 0
 let isClickScrolling = false // 避免點擊按鈕平移時與滾動監聽互相干擾
 
+// 🌟 新增：控制在文章詳情頁時是否凍結橫向滑動
+const isScrollLocked = ref(false)
+function handleToggleLockScroll(locked: boolean) {
+  isScrollLocked.value = locked
+}
+
 // 當前頁面的 Banner 標題
 const currentBannerTitle = computed(() => {
   const tab = tabs[activeTabIndex.value]
@@ -204,6 +210,7 @@ async function handleSendMessage() {
     <main 
       ref="scrollerRef" 
       class="main-scroller-container" 
+      :class="{ 'snap-locked': isScrollLocked }"
       @scroll.passive="handleHorizontalScroll"
     >
       <!-- 1. ABOUT -->
@@ -228,7 +235,8 @@ async function handleSendMessage() {
 
       <!-- 5. BLOG -->
       <section class="swipe-page-pane blog-page-wrapper">
-        <BlogView />
+        <!-- 🌟 接收 BlogView 傳來的鎖定/解鎖通知 -->
+        <BlogView @toggle-lock-scroll="handleToggleLockScroll" />
       </section>
     </main>
 
@@ -337,6 +345,13 @@ async function handleSendMessage() {
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y !important;
     overscroll-behavior-x: contain;
+  }
+
+  /* 🌟 新增：當處於文章閱讀狀態時，強制關閉橫向滾動與吸附 */
+  .main-scroller-container.snap-locked {
+    overflow-x: hidden !important;
+    scroll-snap-type: none !important;
+    touch-action: pan-y !important;
   }
 
   .swipe-page-pane {

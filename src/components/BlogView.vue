@@ -3,6 +3,11 @@ import { ref, computed } from 'vue'
 import { marked } from 'marked'
 import postsData from '../data/posts.json'
 
+// 🌟 新增：通知外層父容器 (App.vue) 是否需要鎖定/解鎖水平切換
+const emit = defineEmits<{
+  (e: 'toggle-lock-scroll', locked: boolean): void
+}>()
+
 interface Post {
   id: string
   title: string
@@ -136,12 +141,36 @@ const renderedContent = computed(() => {
 
 function selectPost(id: string) {
   selectedPostId.value = id
+  emit('toggle-lock-scroll', true)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function backToList() {
   selectedPostId.value = null
+  emit('toggle-lock-scroll', false)
   window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// 🌟 手勢向右滑動返回文章列表 (Swipe to Back)
+let touchStartX = 0
+let touchStartY = 0
+
+function handleTouchStart(e: TouchEvent) {
+  touchStartX = e.touches[0].clientX
+  touchStartY = e.touches[0].clientY
+}
+
+function handleTouchEnd(e: TouchEvent) {
+  const touchEndX = e.changedTouches[0].clientX
+  const touchEndY = e.changedTouches[0].clientY
+
+  const diffX = touchEndX - touchStartX
+  const diffY = touchEndY - touchStartY
+
+  // 水平向右滑動大於 70px，且垂直偏移小於 60px（確認不是上下滑動看文章）
+  if (diffX > 70 && Math.abs(diffY) < 60) {
+    backToList()
+  }
 }
 
 function scrollToHeading(id: string) {
@@ -213,7 +242,12 @@ function scrollToHeading(id: string) {
     </div>
 
     <!-- 2. 文章閱讀內頁 -->
-    <div v-else class="post-detail-layout">
+    <div 
+      v-else 
+      class="post-detail-layout"
+      @touchstart.passive="handleTouchStart"
+      @touchend.passive="handleTouchEnd"
+    >
       <!-- 左側固定目錄欄 (Sticky Sidebar) -->
       <aside class="detail-sidebar">
         <!-- 置頂返回按鈕 -->
@@ -446,6 +480,8 @@ function scrollToHeading(id: string) {
   gap: 56px;
   position: relative;
   width: 100%;
+  overscroll-behavior-x: contain; /* 🌟 新增：防止水平滾動手勢傳導給外層 */
+  touch-action: pan-y;           /* 🌟 新增：手機觸碰只響應垂直上下滑動 */
 }
 
 .detail-sidebar {

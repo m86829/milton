@@ -53,13 +53,13 @@
                   <!-- 手機版：使用 vue-pdf-embed 畫布與分頁控制器 -->
                   <div v-if="isMobile" class="pdf-render-box">
                     <vue-pdf-embed 
-                      v-if="isPdfLoaded(project.id)"
+                      v-if="shouldRenderPdf(project.id)"
                       :source="getMediaUrl(project.before)" 
                       :page="pdfPages[project.id + '-before'] || 1"
                       @loaded="onPdfLoaded($event, project.id + '-before')"
                       class="custom-pdf-canvas"
                     />
-                    <div class="pdf-pagination-bar" v-if="isPdfLoaded(project.id) && pdfTotalPages[project.id + '-before'] > 1">
+                    <div class="pdf-pagination-bar" v-if="shouldRenderPdf(project.id) && pdfTotalPages[project.id + '-before'] > 1">
                       <button 
                         class="jump-btn"
                         title="倒退 5 頁"
@@ -88,7 +88,7 @@
 
                   <!-- 電腦版：維持原生 iframe 預覽 -->
                   <iframe 
-                    v-else-if="isPdfLoaded(project.id)" 
+                    v-else-if="shouldRenderPdf(project.id)" 
                     :src="formatPdfUrl(getMediaUrl(project.before))"
                     class="doc-preview-frame"
                   ></iframe>
@@ -140,13 +140,13 @@
                   <!-- 手機版：使用 vue-pdf-embed 畫布與分頁控制器 -->
                   <div v-if="isMobile" class="pdf-render-box">
                     <vue-pdf-embed 
-                      v-if="isPdfLoaded(project.id)"
+                      v-if="shouldRenderPdf(project.id)"
                       :source="getMediaUrl(project.after)" 
                       :page="pdfPages[project.id + '-after'] || 1"
                       @loaded="onPdfLoaded($event, project.id + '-after')"
                       class="custom-pdf-canvas"
                     />
-                    <div class="pdf-pagination-bar" v-if="isPdfLoaded(project.id) && pdfTotalPages[project.id + '-after'] > 1">
+                    <div class="pdf-pagination-bar" v-if="shouldRenderPdf(project.id) && pdfTotalPages[project.id + '-after'] > 1">
                       <button 
                         class="jump-btn"
                         title="倒退 5 頁"
@@ -175,7 +175,7 @@
 
                   <!-- 電腦版：維持原生 iframe 預覽 -->
                   <iframe 
-                    v-else-if="isPdfLoaded(project.id)" 
+                    v-else-if="shouldRenderPdf(project.id)" 
                     :src="formatPdfUrl(getMediaUrl(project.after))"
                     class="doc-preview-frame"
                   ></iframe>
@@ -426,12 +426,32 @@ const MAX_SAVED_PROJECTS = 5
 const rememberedProjects = ref<string[]>([])
 const visiblePrefetchProjects = ref<Set<string>>(new Set())
 
+// 🌟 核心防護：手機端必須「訪客點擊過按鈕」才掛載 PDF；電腦端維持視窗快取
+const shouldRenderPdf = (id: string) => {
+  if (isMobile.value) {
+    return Boolean(projectStates[id]?.hasInteracted)
+  }
+  return rememberedProjects.value.includes(id) || visiblePrefetchProjects.value.has(id)
+}
+
 const isPdfLoaded = (id: string) => {
   return rememberedProjects.value.includes(id) || visiblePrefetchProjects.value.has(id)
 }
 
 const handleClickInitial = (id: string) => {
   if (!projectStates[id]) return
+
+  // 🌟 手機端單一開啟互斥鎖：點擊新專案時，強制關閉並卸載其他所有專案的 PDF
+  if (isMobile.value) {
+    Object.keys(projectStates).forEach((projId) => {
+      if (projId !== id) {
+        projectStates[projId].isActive = false
+        projectStates[projId].hasInteracted = false
+      }
+    })
+    rememberedProjects.value = [id]
+  }
+
   projectStates[id].isActive = true
   projectStates[id].hasInteracted = true
 
@@ -463,9 +483,10 @@ const handleMouseLeave = (id: string) => {
   }
 }
 
-// 視窗偵測
+// 視窗偵測（加上 300ms 防抖，快速刷過不觸發）
 const cardElements = new Map<string, HTMLElement>()
 let observer: IntersectionObserver | null = null
+const debounceTimers = new Map<string, any>()
 
 const setCardRef = (id: string, el: any) => {
   if (el) {
@@ -479,9 +500,10 @@ onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
 
-  // 網頁載入時啟動背景縮圖自動生成
+  // 網頁載入時啟動背景縮圖自動生成（完全保留）
   autoGeneratePdfPreviews()
 
+  // 🌟 移除 200px 激進預載，只在卡片確實停留時載入
   observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       let targetId = ''
@@ -494,16 +516,39 @@ onMounted(() => {
       if (!targetId) return
 
       if (entry.isIntersecting) {
-        if (!rememberedProjects.value.includes(targetId)) {
-          visiblePrefetchProjects.value.add(targetId)
+        // 清除舊計時器
+        if (debounceTimers.has(targetId)) {
+          clearTimeout(debounceTimers.get(targetId))
         }
+        // 🌟 停留在視窗超過 300ms 才加入預載池，快速滑過直接略過
+        const timer = setTimeout(() => {
+          if (!rememberedProjects.value.includes(targetId)) {
+            visiblePrefetchProjects.value.add(targetId)
+          }
+          debounceTimers.delete(targetId)
+        }, 300)
+        debounceTimers.set(targetId, timer)
       } else {
+        if (debounceTimers.has(targetId)) {
+          clearTimeout(debounceTimers.get(targetId))
+          debounceTimers.delete(targetId)
+        }
         if (!rememberedProjects.value.includes(targetId)) {
           visiblePrefetchProjects.value.delete(targetId)
         }
+
+        // 🌟 新增：手機端只要卡片一離開可視範圍，立刻關閉該 PDF 並釋放記憶體
+        if (isMobile.value && projectStates[targetId]) {
+          projectStates[targetId].hasInteracted = false
+          projectStates[targetId].isActive = false
+          const idx = rememberedProjects.value.indexOf(targetId)
+          if (idx !== -1) {
+            rememberedProjects.value.splice(idx, 1)
+          }
+        }
       }
     })
-  }, { rootMargin: '200px 0px' })
+  }, { rootMargin: '0px' })
 
   cardElements.forEach((el) => observer?.observe(el))
 })
@@ -511,6 +556,8 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', checkMobile)
   observer?.disconnect()
+  debounceTimers.forEach((timer) => clearTimeout(timer))
+  debounceTimers.clear()
 })
 </script>
 
