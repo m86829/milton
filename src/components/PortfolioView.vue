@@ -20,7 +20,8 @@
           <div class="project-tags" v-if="project.tags && project.tags.length">
             <span v-for="tag in project.tags" :key="tag" class="tag">{{ tag }}</span>
           </div>
-          <h3 class="project-title">{{ project.title }}</h3>
+          <!-- 🌟 標題：當放不下時才依逗點、直槓等標點處換行 -->
+          <h3 class="project-title" v-html="formatResponsiveTitle(project.title)"></h3>
           <p class="project-summary" v-if="project.summary">{{ project.summary }}</p>
         </div>
 
@@ -266,6 +267,15 @@ interface ProjectItem {
 
 // 🌟 反轉 Notion 抓下來的陣列順序，與 Notion 畫面由上至下的順序一致
 const projects = reactive<ProjectItem[]>(JSON.parse(JSON.stringify(rawProjects)).reverse())
+
+// 🌟 在標點與分隔線處補上空格，提供標準斷行分詞點
+const formatResponsiveTitle = (title: string) => {
+  if (!title) return ''
+  return title
+    .replace(/，/g, '， ')
+    .replace(/、/g, '、 ')
+    .replace(/\s*\|\s*/g, ' | ')
+}
 
 interface ProjectState {
   isActive: boolean
@@ -961,11 +971,13 @@ onUnmounted(() => {
   }
 
   .project-title {
-    font-size: clamp(1.18rem, 4.4vw, 1.32rem) !important;
-    line-height: 1.4 !important;
-    text-wrap: balance !important; /* 核心：自動平衡每行字數，消除單字孤行 */
-    word-break: normal !important;
+    font-size: clamp(1.15rem, 4.2vw, 1.28rem) !important;
+    line-height: 1.45 !important;
+    /* 🌟 keep-all 配合空格斷行；若後半段長度仍超出卡片，允許 break-word 防止破版右切 */
+    word-break: keep-all !important;
     overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
+    white-space: normal !important;
   }
 
   .project-summary {
@@ -1002,7 +1014,7 @@ onUnmounted(() => {
     flex-direction: column !important;
   }
 
-  /* 🌟 核心修正：取消 520px 固定高度，自適應貼合直式 Word 與橫向 PPT，消除多餘空白 */
+  /* 🌟 核心修正：自適應貼合直式 Word 與橫向 PPT，消除多餘空白 */
   .comparison-panel {
     height: auto !important;
     min-height: 220px !important;
