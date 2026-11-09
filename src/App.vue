@@ -629,47 +629,66 @@ async function handleSendMessage() {
   40% { transform: scale(1); }
 }
 
+/* 🌟 輸入區域：嚴格鎖定寬度與內距，防止溢出邊界 */
 .chat-input-area {
-  display: flex;
-  gap: 8px;
-  padding: 12px 14px;
-  background: #ffffff;
-  border-top: 1px solid #e2e8f0;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 10px 12px !important;
+  background: #ffffff !important;
+  border-top: 1px solid #e2e8f0 !important;
 }
 
+/* 🌟 輸入框：font-size: 16px 徹底防止 iOS 自動放大畫面 */
 .chat-input-area input {
-  flex: 1;
-  padding: 9px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  font-size: 0.88rem;
-  outline: none;
-  transition: border-color 0.2s ease;
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  height: 40px !important;
+  box-sizing: border-box !important;
+  padding: 0 10px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  font-size: 16px !important; /* 核心關鍵：iOS 小於 16px 會觸發整頁放大 */
+  outline: none !important;
+  transition: border-color 0.2s ease !important;
 }
 
 .chat-input-area input:focus {
-  border-color: #15803d;
+  border-color: #15803d !important;
 }
 
+/* 🌟 發送按鈕：固定寬度 54px，禁止被彈性壓縮 */
 .chat-send-btn {
-  background: #15803d;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 0 16px;
-  font-size: 0.88rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.2s ease;
+  flex: 0 0 54px !important;
+  width: 54px !important;
+  height: 40px !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+  background: #15803d !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 0 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: background 0.2s ease !important;
 }
 
 .chat-send-btn:hover:not(:disabled) {
-  background: #166534;
+  background: #166534 !important;
 }
 
 .chat-send-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
 }
 
 .chat-slide-enter-active,
@@ -683,10 +702,21 @@ async function handleSendMessage() {
   transform: translateY(16px) scale(0.96);
 }
 
+/* 🌟 手機端微調：縮小視窗寬高，停駐在按鈕左上方且不遮蔽畫面 */
 @media (max-width: 480px) {
+  .milton-ai-widget {
+    bottom: 20px !important;
+    right: 16px !important;
+  }
+
   .milton-chat-card {
-    width: calc(100vw - 32px);
-    height: 75vh;
+    width: 290px !important;
+    max-width: calc(100vw - 32px) !important;
+    height: 380px !important;
+    max-height: 52vh !important;
+    margin-bottom: 10px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.22) !important;
   }
 }
 </style>
