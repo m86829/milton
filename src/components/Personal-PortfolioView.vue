@@ -13,7 +13,7 @@
     <a href="https://contrastchecker.pages.dev/" target="_blank" class="work-item" style="text-decoration: none;">
       <div class="work-preview-box" style="background-image: url('/對比度網站頁面.png'); background-size: cover; background-position: center;"></div>
       <div class="work-info">
-        <h3> 純自製小工具-快速取得色碼及顏色對比度</h3>
+        <h3> 純自製小工具-快速取得色碼/顏色對比度</h3>
         <div class="work-category">2026/5 隨著跟Gemini越來越多協作，寫程式或設計常需要使用到6位色碼，乾脆直接做成實用小工具，滴管一點就知道了，快速解決問題。</div>
         <div class="work-link" style="margin-top: 4px; font-weight: 600; color: #111111;">查看網站 ↗</div>
       </div>
@@ -32,7 +32,7 @@
     <div class="work-item">
       <div class="work-preview-box" style="background-image: url('/聯盟戰旗- 菁英.png'); background-size: cover; background-position: center;"></div>
       <div class="work-info">
-        <h3>聯盟戰棋遊戲S14賽季「菁英」(前50玩家)</h3>
+        <h3>聯盟戰棋遊戲S14賽季「菁英」(前50)</h3>
         <div class="work-category">2025/6 與當初FreeFire朋友，達成雙人搭檔模式「菁英」。</div>
       </div>
     </div>

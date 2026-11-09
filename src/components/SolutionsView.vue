@@ -1,9 +1,9 @@
 <template>
   <div class="solutions-page-wrapper fade-in">
     <div class="solutions-header-block">
-      <h2 class="solutions-main-title">我能解決: 專業內容被讀懂、使用者體驗更流暢</h2>
+      <h2 class="solutions-main-title">我能解決: 專業內容被讀懂、<br class="mobile-br">使用者體驗更流暢</h2>
       <p class="solutions-sub-desc">
-        結合嚴謹的資訊架構重組、視覺引導與現代前端工程，專注為複雜簡報、學術報告與個人專案<br>打造兼具美感與高效能的解答。
+        透過架構重組、視覺引導與現代前端工程，<br class="mobile-br">為複雜簡報、學術報告與個人專案，<br class="mobile-br"><br class="desktop-br">打造兼具美感與高效能的解答。
       </p>
     </div>
 
@@ -54,29 +54,29 @@
         <div class="step-item">
           <div class="step-badge">STEP 1</div>
           <h4>需求診斷</h4>
-          <p>盤點現有檔案、目標受眾<br>與核心痛點</p>
+          <p>盤點現有檔案<br class="mobile-br"><br class="desktop-br">目標受眾<br class="desktop-br"><br class="mobile-br">核心痛點</p>
         </div>
         <div class="step-item">
           <div class="step-badge">STEP 2</div>
           <h4>架構規劃</h4>
-          <p>梳理資訊層級、視覺規範<br>或系統架構原型</p>
+          <p>梳理資訊層級<br class="mobile-br"><br class="desktop-br">視覺規範<br class="desktop-br"><br class="mobile-br">系統架構原型</p>
         </div>
         <div class="step-item">
           <div class="step-badge">STEP 3</div>
           <h4>精修實作</h4>
-          <p>落實排版打磨、效能調校<br>與邊界測試</p>
+          <p>落實排版打磨<br class="mobile-br"><br class="desktop-br">效能調校<br class="desktop-br"><br class="mobile-br">邊界測試</p>
         </div>
         <div class="step-item">
           <div class="step-badge">STEP 4</div>
           <h4>驗收交付</h4>
-          <p>完整檔案交付、原始碼部署<br>與後續支援</p>
+          <p>完整檔案交付<br class="mobile-br"><br class="desktop-br">原始碼部署<br class="desktop-br"><br class="mobile-br">後續支援</p>
         </div>
       </div>
     </section>
 
     <section class="solutions-contact-cta">
       <div class="cta-inner-box">
-        <h3>準備好讓你的內容更有影響力了嗎？</h3>
+        <h3>打算讓你的內容更有影響力了嗎？</h3>
         <p>無論是學術簡報重構、網頁建置諮詢或技術合作，歡迎隨時與我聯繫交流。</p>
         <div class="contact-cards-container">
           <a href="mailto:m8682906@gmail.com" class="contact-card">
@@ -104,16 +104,18 @@
   margin-bottom: 3.5rem;
 }
 
+/* 🌟 電腦與平板使用流式字體：依螢幕動態適配 */
 .solutions-main-title {
-  font-size: 2.2rem;
+  font-size: clamp(1.45rem, 4.5vw, 2.2rem);
   font-weight: 800;
   color: #123247;
   margin-bottom: 1rem;
   letter-spacing: -0.02em;
+  line-height: 1.35;
 }
 
 .solutions-sub-desc {
-  font-size: 1.15rem;
+  font-size: clamp(0.95rem, 2.5vw, 1.15rem);
   color: #475569;
   line-height: 1.7;
   max-width: 780px;
@@ -301,4 +303,50 @@
   margin: 0;
   transition: color 0.2s ease;
 }
+
+/* ==================== 行動端 RWD 優化 ==================== */
+@media (max-width: 820px) {
+  .solutions-page-wrapper {
+    /* 🌟 底部預留 120px 空間，避免聯絡卡片被右下角 AI 助理按鈕蓋住 */
+    padding: 1.5rem 1rem 120px !important;
+    overflow-x: hidden !important;
+  }
+
+  .solutions-header-block {
+    margin-bottom: 2rem !important;
+  }
+
+  /* 🌟 手機端副標題隱藏死板的 <br>，讓文字順暢自然換行 */
+  .solutions-sub-desc br {
+    display: none;
+  }
+
+  .solutions-grid {
+    gap: 1.25rem !important;
+    margin-bottom: 2.5rem !important;
+  }
+
+  .solution-card {
+    padding: 1.5rem 1.25rem !important;
+  }
+
+  .process-section {
+    padding: 1.75rem 1.25rem !important;
+    margin-bottom: 2.5rem !important;
+  }
+
+  .process-steps {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .solutions-contact-cta {
+    padding: 2rem 1.25rem !important;
+  }
+
+  .cta-inner-box h3 {
+    font-size: clamp(1.25rem, 5vw, 1.6rem) !important;
+  }
+}
+
 </style>

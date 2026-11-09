@@ -497,6 +497,32 @@ select {
   color: var(--text-muted);
 }
 
+/* ====================================================
+   全域響應式換行控制 (Responsive Line Breaks)
+   ==================================================== */
+
+/* 電腦端預設：手機換行標籤完全隱藏，不影響電腦版排版 */
+.mobile-br {
+  display: none !important;
+}
+
+/* 電腦專用換行（只有電腦端會換行） */
+.desktop-br {
+  display: inline !important;
+}
+
+/* 行動端 (820px 以下)：啟用手機換行，隱藏電腦換行 */
+@media (max-width: 820px) {
+  .mobile-br {
+    display: inline !important;
+  }
+
+  .desktop-br {
+    display: none !important;
+  }
+}
+
+
 /* ==========================================================================
    ABOUT 頁面樣式
    ========================================================================== */
@@ -964,4 +990,5 @@ select {
     cursor: pointer;
     font-weight: 600;
   }
+
 }

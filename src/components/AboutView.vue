@@ -297,6 +297,11 @@ const canvasHeight = computed(() => {
               'is-ongoing-card': item.isOngoing 
             }"
           >
+            <!-- 🌟 手機端專屬年份標籤：卡片內嵌展示，替代重疊失效的 SVG 刻度 -->
+            <div class="mobile-date-badge" :style="{ color: item.color, borderColor: item.color }">
+              {{ item.type === 'point' ? item.ymStartDate : `${item.ymStartDate} ~ ${item.ymEndDate}` }}
+            </div>
+
             <div class="metro-card-title">{{ item.title }}</div>
             <div v-if="item.subtitle" class="metro-card-subtitle">{{ item.subtitle }}</div>
 
@@ -561,49 +566,108 @@ const canvasHeight = computed(() => {
   line-height: 1.5;
 }
 
-/* 行動端 RWD */
+/* 🌟 電腦版預設隱藏手機版專屬年份標籤 */
+.mobile-date-badge {
+  display: none;
+}
+
+/* ==================== 行動端 RWD 完全修復 ==================== */
 @media (max-width: 820px) {
+  .about-page-wrapper {
+    padding: 2.5rem 1rem 120px !important;
+    overflow-x: hidden !important;
+  }
+
   .about-hero-section {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
 
+  /* 🌟 使用流式字體 clamp()：隨螢幕寬度無段微調，確保第二行不爆出孤字 */
   .hero-slogan {
-    font-size: 2.2rem;
+    font-size: clamp(1.65rem, 6.2vw, 1.95rem);
+    line-height: 1.35;
+    letter-spacing: -0.01em;
   }
 
+  /* 時間軸容器：左側拉出垂直綠色主幹軸線 */
   .metro-timeline-container {
     height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.25rem !important;
+    padding-left: 20px !important;
+    border-left: 3px solid #3f6212; /* 時間軸主線 */
+    margin-left: 12px !important;
+    box-sizing: border-box !important;
   }
 
-  .metro-svg-canvas {
-    display: none;
+  /* 隱藏彈窗內重複出現的日期標籤 */
+  .metro-card-popover .popover-tag {
+    display: none !important;
   }
 
+  /* 隱藏桌機 SVG 畫布與桌機浮動刻度 */
+  .metro-svg-canvas,
   .metro-spine-anchor {
-    left: 23px !important;
-    transform: none;
-    top: 0 !important;
+    display: none !important;
   }
 
+  /* 卡片外層解除絕對定位與 left 偏移，消除向右穿刺 */
   .metro-card-wrapper {
     position: relative !important;
     top: auto !important;
-    left: 60px !important;
+    left: auto !important;
     transform: none !important;
-    margin-bottom: 2rem;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
   }
 
+  /* 卡片本體充滿螢幕寬度 */
   .metro-card {
-    min-width: 100%;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 1rem 1.25rem !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06) !important;
   }
 
+  /* 🌟 手機版專用年份標籤顯示 */
+  .mobile-date-badge {
+    display: inline-block !important;
+    font-size: 0.76rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.04em !important;
+    border: 1.5px solid currentColor !important;
+    border-radius: 6px !important;
+    padding: 2px 8px !important;
+    margin-bottom: 0.5rem !important;
+    background: #f8fafc !important;
+  }
+
+  .metro-card-title {
+    font-size: 1.05rem !important;
+    word-break: break-word !important;
+  }
+
+  .metro-card-subtitle {
+    font-size: 0.85rem !important;
+    margin-top: 5px !important;
+  }
+
+  /* 手機端懸浮彈窗直接平鋪在卡片內部下方 */
   .metro-card-popover {
-    position: static;
-    width: 100%;
-    box-shadow: none;
-    border: none;
-    padding: 0.5rem 0 0;
+    position: static !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0.75rem 0 0 !important;
+    margin-top: 0.5rem !important;
+    border-top: 1px dashed #e2e8f0 !important;
   }
 }
 </style>
