@@ -963,7 +963,8 @@ onUnmounted(() => {
   .project-title {
     font-size: clamp(1.18rem, 4.4vw, 1.32rem) !important;
     line-height: 1.4 !important;
-    word-break: keep-all !important;
+    text-wrap: balance !important; /* 核心：自動平衡每行字數，消除單字孤行 */
+    word-break: normal !important;
     overflow-wrap: break-word !important;
   }
 
