@@ -88,7 +88,7 @@ def init_rag_system():
 
     # Google 官方 Embeddings
     embeddings = GoogleGenerativeAIEmbeddings(
-        model="models/text-embedding-001",  # 使用穩定通用的正式版本
+        model="models/gemini-embedding-001",  # 使用穩定通用的正式版本
         google_api_key=api_key
     )
 
