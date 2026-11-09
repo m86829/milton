@@ -204,9 +204,10 @@ def chat(request: Request, body: ChatRequest):
 
         # 🌟 採用穩定正式的官方模型名稱
         candidate_models = [
-            "gemini-1.5-flash",
-            "gemini-1.5-flash-8b",
-            "gemini-1.5-pro",
+            "gemini-3.5-flash-lite",
+            "gemini-3.6-flash",
+            "gemini-3.8-flash",
+            "gemini-embedding-1"
         ]
 
         response = None

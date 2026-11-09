@@ -264,7 +264,8 @@ interface ProjectItem {
   after: ComparisonSide
 }
 
-const projects = reactive<ProjectItem[]>(JSON.parse(JSON.stringify(rawProjects)))
+// 🌟 反轉 Notion 抓下來的陣列順序，與 Notion 畫面由上至下的順序一致
+const projects = reactive<ProjectItem[]>(JSON.parse(JSON.stringify(rawProjects)).reverse())
 
 interface ProjectState {
   isActive: boolean
@@ -288,7 +289,7 @@ const checkMobile = () => {
   }
 }
 
-// 頁碼管理
+// 頁碼管理（維持純粹數值，保證輕量零崩潰）
 const pdfPages = reactive<Record<string, number>>({})
 const pdfTotalPages = reactive<Record<string, number>>({})
 
@@ -298,14 +299,17 @@ const onPdfLoaded = (pdfDoc: any, key: string) => {
 }
 
 const prevPdfPage = (key: string) => {
-  if ((pdfPages[key] || 1) > 1) {
-    pdfPages[key]--
+  const current = pdfPages[key] || 1
+  if (current > 1) {
+    pdfPages[key] = current - 1
   }
 }
 
 const nextPdfPage = (key: string) => {
-  if ((pdfPages[key] || 1) < (pdfTotalPages[key] || 1)) {
-    pdfPages[key] = (pdfPages[key] || 1) + 1
+  const current = pdfPages[key] || 1
+  const total = pdfTotalPages[key] || 1
+  if (current < total) {
+    pdfPages[key] = current + 1
   }
 }
 
@@ -385,7 +389,6 @@ const autoGeneratePdfPreviews = async () => {
     const sides: (ComparisonSide | undefined)[] = [project.before, project.after]
     for (const side of sides) {
       if (!side) continue
-      // 若已有指定 previews 則跳過，若無且為 PDF 則自動擷取前兩頁
       if ((!side.previews || side.previews.length === 0) && isPdf(side)) {
         const pdfUrl = getMediaUrl(side)
         if (!pdfUrl) continue
@@ -426,7 +429,7 @@ const MAX_SAVED_PROJECTS = 5
 const rememberedProjects = ref<string[]>([])
 const visiblePrefetchProjects = ref<Set<string>>(new Set())
 
-// 🌟 核心防護：手機端必須「訪客點擊過按鈕」才掛載 PDF；電腦端維持視窗快取
+// 手機端必須「訪客點擊過按鈕」才掛載 PDF；電腦端維持視窗快取
 const shouldRenderPdf = (id: string) => {
   if (isMobile.value) {
     return Boolean(projectStates[id]?.hasInteracted)
@@ -434,14 +437,9 @@ const shouldRenderPdf = (id: string) => {
   return rememberedProjects.value.includes(id) || visiblePrefetchProjects.value.has(id)
 }
 
-const isPdfLoaded = (id: string) => {
-  return rememberedProjects.value.includes(id) || visiblePrefetchProjects.value.has(id)
-}
-
 const handleClickInitial = (id: string) => {
   if (!projectStates[id]) return
 
-  // 🌟 手機端單一開啟互斥鎖：點擊新專案時，強制關閉並卸載其他所有專案的 PDF
   if (isMobile.value) {
     Object.keys(projectStates).forEach((projId) => {
       if (projId !== id) {
@@ -483,7 +481,7 @@ const handleMouseLeave = (id: string) => {
   }
 }
 
-// 視窗偵測（加上 300ms 防抖，快速刷過不觸發）
+// 視窗偵測
 const cardElements = new Map<string, HTMLElement>()
 let observer: IntersectionObserver | null = null
 const debounceTimers = new Map<string, any>()
@@ -499,11 +497,8 @@ const setCardRef = (id: string, el: any) => {
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
-
-  // 網頁載入時啟動背景縮圖自動生成（完全保留）
   autoGeneratePdfPreviews()
 
-  // 🌟 移除 200px 激進預載，只在卡片確實停留時載入
   observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       let targetId = ''
@@ -516,11 +511,9 @@ onMounted(() => {
       if (!targetId) return
 
       if (entry.isIntersecting) {
-        // 清除舊計時器
         if (debounceTimers.has(targetId)) {
           clearTimeout(debounceTimers.get(targetId))
         }
-        // 🌟 停留在視窗超過 300ms 才加入預載池，快速滑過直接略過
         const timer = setTimeout(() => {
           if (!rememberedProjects.value.includes(targetId)) {
             visiblePrefetchProjects.value.add(targetId)
@@ -537,7 +530,6 @@ onMounted(() => {
           visiblePrefetchProjects.value.delete(targetId)
         }
 
-        // 🌟 新增：手機端只要卡片一離開可視範圍，立刻關閉該 PDF 並釋放記憶體
         if (isMobile.value && projectStates[targetId]) {
           projectStates[targetId].hasInteracted = false
           projectStates[targetId].isActive = false
@@ -631,10 +623,11 @@ onUnmounted(() => {
 .project-summary {
   color: #475569;
   font-size: 0.95rem;
-  line-height: 1.7;
-  text-align: center;
+  line-height: 1.75;
+  text-align: left;
   max-width: 680px;
   margin: 0 auto 1.5rem;
+  word-break: break-word;
 }
 
 .comparison-wrapper {
@@ -741,13 +734,9 @@ onUnmounted(() => {
 /* 手機端 PDF 自適應渲染容器 */
 .pdf-render-box {
   width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  overflow-y: auto;
-  overflow-x: hidden;
   position: relative;
 }
 
@@ -842,7 +831,7 @@ onUnmounted(() => {
   display: block;
 }
 
-/* 表層縮圖容器 (雙頁預覽圖垂直排列，墊在黑色遮罩底層) */
+/* 表層縮圖容器 */
 .preview-images-box {
   position: absolute;
   top: 1.25rem;
@@ -966,18 +955,25 @@ onUnmounted(() => {
   }
 
   .project-card {
-    padding: 1.25rem 0.75rem !important;
+    padding: 1.5rem 1.15rem !important;
     border-radius: 16px !important;
     overflow: hidden !important;
   }
 
   .project-title {
-    font-size: 1.35rem !important;
-    line-height: 1.35;
-    word-break: break-word !important;
+    font-size: clamp(1.18rem, 4.4vw, 1.32rem) !important;
+    line-height: 1.4 !important;
+    word-break: keep-all !important;
+    overflow-wrap: break-word !important;
   }
 
-  /* 雙欄轉橫向軌道：單一卡寬 + 左右滑動 + 自動吸附邊界 */
+  .project-summary {
+    text-align: left !important;
+    line-height: 1.75 !important;
+    margin-bottom: 1.25rem !important;
+  }
+
+  /* 雙欄轉橫向滑動軌道 */
   .comparison-grid {
     display: flex !important;
     flex-direction: row !important;
@@ -988,6 +984,7 @@ onUnmounted(() => {
     -webkit-overflow-scrolling: touch !important;
     gap: 14px !important;
     padding-bottom: 8px !important;
+    align-items: stretch !important;
   }
 
   .comparison-grid::-webkit-scrollbar {
@@ -1000,18 +997,22 @@ onUnmounted(() => {
     max-width: 100% !important;
     scroll-snap-align: start !important;
     box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
+  /* 🌟 核心修正：取消 520px 固定高度，自適應貼合直式 Word 與橫向 PPT，消除多餘空白 */
   .comparison-panel {
-    height: 520px !important;
-    max-height: 70vh !important;
+    height: auto !important;
+    min-height: 220px !important;
+    max-height: 75vh !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     padding: 0.75rem !important;
+    justify-content: flex-start !important;
   }
 
-  /* 🌟 修正：當面板內部包含 YouTube 影片時，取消 520px 固定高度，自適應 16:9 比例 */
   .comparison-panel:has(.video-container) {
     height: auto !important;
     min-height: unset !important;
@@ -1020,7 +1021,6 @@ onUnmounted(() => {
     padding: 0.5rem !important;
   }
 
-  /* 🌟 修正：單欄無 Before 模式（如精選影片簡報），解除固定高度與置中 */
   .single-column-grid .comparison-panel {
     height: auto !important;
     min-height: unset !important;

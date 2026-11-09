@@ -50,7 +50,7 @@
       <div class="work-preview-box" style="background-image: url('/桌球欸-1200DPI-橫.png'); background-size: cover; background-position: center;"></div>
       <div class="work-info">
         <h3>YouTuber / 曾多年為FreeFire遊戲官方名人堂之一</h3>
-        <div class="work-category">2020/9/21創立頻道，2022/1達成6000訂閱，其中一部教學影片現達10萬觀看次數。此頻道旨在分享遊戲的高端技巧(本人曾台服CS模式百大榜第九/勝率85%)。</div>
+        <div class="work-category">2020/9/21創立頻道，2022/1達成6000訂閱，其中一部教學影片現達10萬觀看次數。此頻道旨在分享遊戲的高端技巧(本人曾台服CS模式百大榜第九/勝率85%)。在名人堂時期(合作夥伴)，提出非常多關於使用者體驗如何改善的建言給官方。</div>
         <div class="work-link" style="margin-top: 4px; font-weight: 600; color: #111111;">查看頻道 ↗</div>
       </div>
     </a>
