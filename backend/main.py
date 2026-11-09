@@ -103,8 +103,8 @@ def init_rag_system():
     else:
         print("📦 首次建立向量快取，切片並分批寫入本地磁碟...")
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=600,
-            chunk_overlap=100
+            chunk_size=1200,
+            chunk_overlap=150
         )
         split_docs = text_splitter.split_documents(all_documents)
         total_docs = len(split_docs)
