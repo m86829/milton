@@ -88,7 +88,7 @@ def init_rag_system():
 
     # Google 官方 Embeddings
     embeddings = GoogleGenerativeAIEmbeddings(
-        model="models/text-embedding-004",  # 使用穩定通用的正式版本
+        model="models/text-embedding-001",  # 使用穩定通用的正式版本
         google_api_key=api_key
     )
 
@@ -204,11 +204,12 @@ def chat(request: Request, body: ChatRequest):
 
         # 🌟 採用穩定正式的官方模型名稱
         candidate_models = [
+            "gemini-3.5-flash-lite",  # 第一順位：最快、最不排隊
+            "gemini-2.5-flash-lite",  # 第二順位：備援輕量版
+            "gemini-3.8-flash",       # 第三順位：新世代高智能主力
+            "gemini-2.5-flash"        # 第四順位：穩定版
             "gemini-embedding-001",
             "gemini-embedding-2",
-            "gemini-3.5-flash-lite",
-            "gemini-2.5-flash-lite",
-            "gemini-3.8-flash" 
         ]
 
         response = None
