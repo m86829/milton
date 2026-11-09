@@ -554,8 +554,11 @@ function scrollToHeading(id: string) {
 
 /* ==================== 內文樣式 ==================== */
 .detail-main-content {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 0%;
+  width: 100%;
+  min-width: 0 !important;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .detail-header {
@@ -633,27 +636,69 @@ function scrollToHeading(id: string) {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 }
 
+/* 文章容器：限制寬度並防止向外撐開 */
+:deep(.markdown-body) {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* 1. 程式碼區塊：寬度鎖死 100%，超出時內部橫向捲動 */
 :deep(.markdown-body pre) {
   background: #0f172a;
   color: #f8fafc;
   padding: 16px;
   border-radius: 8px;
-  overflow-x: auto;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  box-sizing: border-box !important;
   margin: 24px 0;
 }
 
-:deep(.markdown-body code) {
+/* 2. 行內代碼：允許自動折行，避免長單字/函式名稱衝破螢幕 */
+:deep(.markdown-body :not(pre) > code) {
   background: #f1f5f9;
   color: #0f172a;
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 0.9em;
+  white-space: normal !important;
+  word-break: break-all !important;
 }
 
 :deep(.markdown-body pre code) {
   background: transparent;
   color: inherit;
   padding: 0;
+}
+
+/* 3. 表格（F12 撐到 957px 的主因）：超出寬度時在表格內水平捲動 */
+:deep(.markdown-body table) {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  box-sizing: border-box !important;
+  border-collapse: collapse;
+  margin: 24px 0;
+}
+
+:deep(.markdown-body th),
+:deep(.markdown-body td) {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+}
+
+/* 4. 引用區塊 (Callout / Blockquote) 防溢出 */
+:deep(.markdown-body blockquote) {
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 20px 0;
+  padding: 12px 18px;
+  border-left: 4px solid #ea580c;
+  background: #f8fafc;
 }
 
 /* ==================== 底部：上一篇 / 下一篇 ==================== */
@@ -714,6 +759,18 @@ function scrollToHeading(id: string) {
 
 /* ==================== 行動端響應式降級 ==================== */
 @media (max-width: 900px) {
+  .blog-container {
+    padding: 20px 16px 120px !important; /* 底部 120px 安全間距，防止被 AI 助理按鈕擋住 */
+    overflow-x: hidden !important;
+  }
+
+  /* 文章主標題：流式字體無段微調 + 強制折行，解決「AI助理(RAG)」破版 */
+  .detail-title {
+    font-size: clamp(1.4rem, 5.5vw, 2rem) !important;
+    line-height: 1.35 !important;
+    word-break: break-word !important;
+  }
+
   .dense-post-row {
     flex-direction: column;
     gap: 8px;
