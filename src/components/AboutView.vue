@@ -187,7 +187,7 @@ const canvasHeight = computed(() => {
         <div class="hero-tag">Milton Hsu・29・男・台北</div>
         <h1 class="hero-slogan">
           我擅長與Gemini協作，<br />
-          實作出符合預期之解決方案!
+          實現符合預期之解決方案!
         </h1>
       </div>
 
