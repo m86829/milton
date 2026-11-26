@@ -1,0 +1,43 @@
+{
+  "id": "4133eb21-f1cc-80ab-9296-dc3d6d8f8f5d",
+  "title": "如何加快喚醒免費版的Render(Rag)?",
+  "subtitle": "",
+  "category": "個人網站",
+  "date": "2026-11-09",
+  "status": "完成",
+  "color": "#ea580c",
+  "toc": [
+    {
+      "id": "階段一-確認持久化目錄位置與舊快取清理",
+      "text": "階段一：確認持久化目錄位置與舊快取清理",
+      "level": 2
+    },
+    {
+      "id": "階段二-排除模型版本未更新與雲端同步問題",
+      "text": "階段二：排除模型版本未更新與雲端同步問題",
+      "level": 2
+    },
+    {
+      "id": "階段三-排查-render-啟動逾時-port-scan-timeout",
+      "text": "階段三：排查 Render 啟動逾時（Port scan timeout）",
+      "level": 2
+    },
+    {
+      "id": "階段四-診斷冷啟動熱機延遲與-429-資源耗盡限制",
+      "text": "階段四：診斷冷啟動熱機延遲與 429 資源耗盡限制",
+      "level": 2
+    },
+    {
+      "id": "階段五-本地虛擬環境缺包排查與快取生成-根本原因定位",
+      "text": "階段五：本地虛擬環境缺包排查與快取生成（根本原因定位）",
+      "level": 2
+    },
+    {
+      "id": "階段六-建立-github-actions-自動化與架構確認",
+      "text": "階段六：建立 GitHub Actions 自動化與架構確認",
+      "level": 2
+    }
+  ],
+  "htmlContent": "<p><img src=\"/images/notion/4133eb21-f1cc-80ab-9296-dc3d6d8f8f5d-1.png\" alt=\"image.png\"></p>\n<p>第一，功能確定正常運作\n在日誌最後面，前端送出的聊天請求順利拿到了 200 回應，而且模型也成功產出答案。這代表不管是你的前端網站，還是後端的 AI 串接，整條線路已經完全串通。</p>\n<p>第二，為什麼每次開機都要等很久\n因為 Render 免費版每次重新啟動或從休眠喚醒時，硬碟裡面的暫存資料庫都會被清空。\n所以每一次開機，程式都要把文章切成 118 筆，重新呼叫 Google API 算向量。偏偏跑太快撞到了 Google 免費版「每分鐘請求次數上限」（跳出 429 錯誤），程式只能停下來等幾十秒再重試，開機時間才會被拖得很長。</p>\n<p>第三，最簡單的解決辦法\n只要在你的本機電腦跑一次程式，本機就會產生一個叫 chroma_db 的資料庫資料夾。\n你把這個資料夾直接透過 Git 上傳（git push）到雲端。\n這樣 Render 一開機發現硬碟裡已經有算好的資料庫，就不會再去呼叫 Google API 算向量，也不會撞到 429 限制，開機時間就能縮短到幾秒鐘搞定。</p>\n<p><strong>覆盤: 沒安裝完套件，沒產出chroma_db，導致每次都重新讀取，超級慢。未來只要GitHub Action定期更新chroma_db，然後Render直接讀取這個檔案，就會快非常多。</strong></p>\n<h2 id=\"階段一-確認持久化目錄位置與舊快取清理\" class=\"article-h2\">階段一：確認持久化目錄位置與舊快取清理</h2><ul>\n<li><strong>需求</strong>：找出向量資料庫快取目錄，確認是否需要清理以套用新設定。</li>\n<li><strong>瓶頸</strong>：VS Code 檔案總管的目錄樹中未看見 <code>chroma_db</code> 資料夾。</li>\n<li><strong>我的反應</strong>：發送 VS Code 檔案目錄截圖，提問：「<code>chroma_db 在哪裡?</code>」。</li>\n<li><strong>怎麼克服</strong>：</li>\n<li><strong>實作結果</strong>：確認本地檔案狀態，直接進行後續設定更新。</li>\n</ul>\n<h2 id=\"階段二-排除模型版本未更新與雲端同步問題\" class=\"article-h2\">階段二：排除模型版本未更新與雲端同步問題</h2><ul>\n<li><strong>需求</strong>：將 Embedding 模型更新為可用版本並同步至 Render 伺服器。</li>\n<li><strong>瓶頸</strong>：Render 部署日誌持續出現 <code>models/text-embedding-004 is not found for API version v1...</code> 的 404 報錯。</li>\n<li><strong>我的反應</strong>：發送 Render 報錯日誌截圖，反映：「<code>還是出現這個欸</code>」。</li>\n<li><strong>怎麼克服</strong>：</li>\n<li><strong>實作結果</strong>：確保雲端伺服器拉取到最新的模型設定程式碼。</li>\n</ul>\n<h2 id=\"階段三-排查-render-啟動逾時-port-scan-timeout\" class=\"article-h2\">階段三：排查 Render 啟動逾時（Port scan timeout）</h2><ul>\n<li><strong>需求</strong>：後端服務成功啟動並被 Render 的通訊埠檢測機制正常識別。</li>\n<li><strong>瓶頸</strong>：部署卡在啟動流程超過 6 分鐘，觸發平台限制被強制中斷，日誌顯示 <code>Port scan timeout reached, no open ports detected. Bind your service to at least one port.</code>。</li>\n<li><strong>我的反應</strong>：</li>\n<li><strong>怎麼克服</strong>：</li>\n<li><strong>實作結果</strong>：Uvicorn 成功於 <code>$PORT</code>（10000）啟動監聽，解除逾時強制終止問題。</li>\n</ul>\n<h2 id=\"階段四-診斷冷啟動熱機延遲與-429-資源耗盡限制\" class=\"article-h2\">階段四：診斷冷啟動熱機延遲與 429 資源耗盡限制</h2><ul>\n<li><strong>需求</strong>：縮短服務冷啟動（Cold Start）喚醒時間，解決首次訪問時需長時間等待的問題。</li>\n<li><strong>瓶頸</strong>：</li>\n<li><strong>我的反應</strong>：</li>\n<li><strong>怎麼克服</strong>：</li>\n<li><strong>實作結果</strong>：確立將向量資料庫快取納入部署檔案以跳過即時計算的優化路徑。</li>\n</ul>\n<h2 id=\"階段五-本地虛擬環境缺包排查與快取生成-根本原因定位\" class=\"article-h2\">階段五：本地虛擬環境缺包排查與快取生成（根本原因定位）</h2><ul>\n<li><strong>需求</strong>：在本地環境手動生成 <code>chroma_db</code> 向量資料庫快取檔案。</li>\n<li><strong>瓶頸</strong>：在本地執行初始化指令時，終端機回報 <code>ModuleNotFoundError: No module named 'slowapi'</code> 錯誤，導致無法生成快取。</li>\n<li><strong>我的反應</strong>：</li>\n<li><strong>怎麼克服</strong>：</li>\n<li><strong>實作結果</strong>：本地依賴安裝完成，順利跑完切片與持久化流程，成功於 <code>backend/</code> 目錄生成實體 <code>chroma_db</code> 資料夾。</li>\n</ul>\n<h2 id=\"階段六-建立-github-actions-自動化與架構確認\" class=\"article-h2\">階段六：建立 GitHub Actions 自動化與架構確認</h2><ul>\n<li><strong>需求</strong>：透過 CI/CD 自動化定期更新 <code>chroma_db</code> 快取，並確認 Render 讀取快取的加速機制。</li>\n<li><strong>瓶頸</strong>：原本的 GitHub Actions 只同步 Notion 文章，未包含 Python 執行環境與向量建置步驟。</li>\n<li><strong>我的反應</strong>：</li>\n<li><strong>怎麼克服</strong>：</li>\n<li><strong>實作結果</strong>：</li>\n</ul>\n",
+  "plainText": "第一，功能確定正常運作 在日誌最後面，前端送出的聊天請求順利拿到了 200 回應，而且模型也成功產出答案。這代表不管是你的前端網站，還是後端的 AI 串接，整條線路已經完全串通。 第二，為什麼每次開機都要等很久 因為 Render 免費版每次重新啟動或從休眠喚醒時，硬碟裡面的暫存資料庫都會被清空。 所以每一次開機，程式都要把文章切成 118 筆，重新呼叫 Google API 算向量。偏偏跑太快撞到了 Google 免費版「每分鐘請求次數上限」（跳出 429 錯誤），程式只能停下來等幾十秒再重試，開機時間才會被拖得很長。 第三，最簡單的解決辦法 只要在你的本機電腦跑一次程式，本機就會產生一個叫 chroma_db 的資料庫資料夾。 你把這個資料夾直接透過 Git 上傳（git push）到雲端。 這樣 Render 一開機發現硬碟裡已經有算好的資料庫，就不會再去呼叫 Google API 算向量，也不會撞到 429 限制，開機時間就能縮短到幾秒鐘搞定。 覆盤: 沒安裝完套件，沒產出chroma_db，導致每次都重新讀取，超級慢。未來只要GitHub Action定期更新chroma_db，然後Render直接讀取這個檔案，就會快非常多。 階段一：確認持久化目錄位置與舊快取清理 需求 ：找出向量資料庫快取目錄，確認是否需要清理以套用新設定。 瓶頸 ：VS Code 檔案總管的目錄樹中未看見 chroma_db 資料夾。 我的反應 ：發送 VS Code 檔案目錄截圖，提問：「 chroma_db 在哪裡? 」。 怎麼克服 ： 實作結果 ：確認本地檔案狀態，直接進行後續設定更新。 階段二：排除模型版本未更新與雲端同步問題 需求 ：將 Embedding 模型更新為可用版本並同步至 Render 伺服器。 瓶頸 ：Render 部署日誌持續出現 models/text-embedding-004 is not found for API version v1... 的 404 報錯。 我的反應 ：發送 Render 報錯日誌截圖，反映：「 還是出現這個欸 」。 怎麼克服 ： 實作結果 ：確保雲端伺服器拉取到最新的模型設定程式碼。 階段三：排查 Render 啟動逾時（Port scan timeout） 需求 ：後端服務成功啟動並被 Render 的通訊埠檢測機制正常識別。 瓶頸 ：部署卡在啟動流程超過 6 分鐘，觸發平台限制被強制中斷，日誌顯示 Port scan timeout reached, no open ports detected. Bind your service to at least one port. 。 我的反應 ： 怎麼克服 ： 實作結果 ：Uvicorn 成功於 $PORT （10000）啟動監聽，解除逾時強制終止問題。 階段四：診斷冷啟動熱機延遲與 429 資源耗盡限制 需求 ：縮短服務冷啟動（Cold Start）喚醒時間，解決首次訪問時需長時間等待的問題。 瓶頸 ： 我的反應 ： 怎麼克服 ： 實作結果 ：確立將向量資料庫快取納入部署檔案以跳過即時計算的優化路徑。 階段五：本地虛擬環境缺包排查與快取生成（根本原因定位） 需求 ：在本地環境手動生成 chroma_db 向量資料庫快取檔案。 瓶頸 ：在本地執行初始化指令時，終端機回報 ModuleNotFoundError: No module named 'slowapi' 錯誤，導致無法生成快取。 我的反應 ： 怎麼克服 ： 實作結果 ：本地依賴安裝完成，順利跑完切片與持久化流程，成功於 backend/ 目錄生成實體 chroma_db 資料夾。 階段六：建立 GitHub Actions 自動化與架構確認 需求 ：透過 CI/CD 自動化定期更新 chroma_db 快取，並確認 Render 讀取快取的加速機制。 瓶頸 ：原本的 GitHub Actions 只同步 Notion 文章，未包含 Python 執行環境與向量建置步驟。 我的反應 ： 怎麼克服 ： 實作結果 ："
+}

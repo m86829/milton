@@ -1,12 +1,12 @@
 import { Client } from '@notionhq/client'
 import { NotionToMarkdown } from 'notion-to-md'
+import { marked } from 'marked'
 import fs from 'fs'
 import path from 'path'
 import https from 'https'
 import http from 'http'
 import dotenv from 'dotenv'
 import puppeteer from 'puppeteer'
-import { pathToFileURL } from 'url'
 
 dotenv.config()
 
@@ -23,15 +23,83 @@ if (!NOTION_API_KEY) {
 const notion = new Client({ auth: NOTION_API_KEY })
 const n2m = new NotionToMarkdown({ notionClient: notion })
 
+// Notion 顏色對應表（支援文字顏色與底色）
+const NOTION_COLOR_MAP: Record<string, string> = {
+    gray: 'color: #787774;',
+    brown: 'color: #9F6B53;',
+    orange: 'color: #D9730D;',
+    yellow: 'color: #CB912F;',
+    green: 'color: #448361;',
+    blue: 'color: #337EA9;',
+    purple: 'color: #9065B0;',
+    pink: 'color: #C14C8A;',
+    red: 'color: #D44C47;',
+    gray_background: 'background-color: #F1F1EF; padding: 2px 4px; border-radius: 4px;',
+    brown_background: 'background-color: #F4EEEE; padding: 2px 4px; border-radius: 4px;',
+    orange_background: 'background-color: #FBECDD; padding: 2px 4px; border-radius: 4px;',
+    yellow_background: 'background-color: #FBF3DB; padding: 2px 4px; border-radius: 4px;',
+    green_background: 'background-color: #EDF3EC; padding: 2px 4px; border-radius: 4px;',
+    blue_background: 'background-color: #E7F3F8; padding: 2px 4px; border-radius: 4px;',
+    purple_background: 'background-color: #F4F0F7; padding: 2px 4px; border-radius: 4px;',
+    pink_background: 'background-color: #F9F0F5; padding: 2px 4px; border-radius: 4px;',
+    red_background: 'background-color: #FDEBEC; padding: 2px 4px; border-radius: 4px;'
+}
+
+// 將 Notion rich_text 轉為精準 HTML（同時解決顏色與 ** 粗體卡住問題）
+function richTextToHtml(richTexts: any[]): string {
+    if (!richTexts || !Array.isArray(richTexts)) return ''
+    return richTexts.map((rt) => {
+        let text = rt.plain_text || ''
+        if (!text) return ''
+
+        const ann = rt.annotations || {}
+        if (ann.bold) text = `<strong>${text}</strong>`
+        if (ann.italic) text = `<em>${text}</em>`
+        if (ann.strikethrough) text = `<del>${text}</del>`
+        if (ann.underline) text = `<u>${text}</u>`
+        if (ann.code) text = `<code>${text}</code>`
+        if (rt.href) text = `<a href="${rt.href}" target="_blank" rel="noopener noreferrer">${text}</a>`
+        if (ann.color && ann.color !== 'default' && NOTION_COLOR_MAP[ann.color]) {
+            text = `<span style="${NOTION_COLOR_MAP[ann.color]}">${text}</span>`
+        }
+        return text
+    }).join('')
+}
+
+// 覆寫常見區塊的轉換邏輯，保留顏色與樣式
+n2m.setCustomTransformer('paragraph', async (block: any) => {
+    return richTextToHtml(block.paragraph?.rich_text)
+})
+n2m.setCustomTransformer('bulleted_list_item', async (block: any) => {
+    return `- ${richTextToHtml(block.bulleted_list_item?.rich_text)}`
+})
+n2m.setCustomTransformer('numbered_list_item', async (block: any) => {
+    return `1. ${richTextToHtml(block.numbered_list_item?.rich_text)}`
+})
+n2m.setCustomTransformer('heading_1', async (block: any) => {
+    return `# ${richTextToHtml(block.heading_1?.rich_text)}`
+})
+n2m.setCustomTransformer('heading_2', async (block: any) => {
+    return `## ${richTextToHtml(block.heading_2?.rich_text)}`
+})
+n2m.setCustomTransformer('heading_3', async (block: any) => {
+    return `### ${richTextToHtml(block.heading_3?.rich_text)}`
+})
+n2m.setCustomTransformer('quote', async (block: any) => {
+    return `> ${richTextToHtml(block.quote?.rich_text)}`
+})
+
 const IMAGE_DIR = path.resolve(process.cwd(), 'public/images/notion')
 const PROJECTS_DIR = path.resolve(process.cwd(), 'public/projects')
 const DATA_DIR = path.resolve(process.cwd(), 'src/data')
 const PREVIEWS_DIR = path.resolve(process.cwd(), 'public/previews')
+const POSTS_DETAIL_DIR = path.resolve(process.cwd(), 'public/posts')
 
 if (!fs.existsSync(IMAGE_DIR)) fs.mkdirSync(IMAGE_DIR, { recursive: true })
 if (!fs.existsSync(PROJECTS_DIR)) fs.mkdirSync(PROJECTS_DIR, { recursive: true })
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
 if (!fs.existsSync(PREVIEWS_DIR)) fs.mkdirSync(PREVIEWS_DIR, { recursive: true })
+if (!fs.existsSync(POSTS_DETAIL_DIR)) fs.mkdirSync(POSTS_DETAIL_DIR, { recursive: true })
 
 function downloadFile(url: string, destPath: string): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -71,7 +139,6 @@ async function generatePdfPreviews(pdfFilePath: string, baseName: string): Promi
     const p1Path = path.join(PREVIEWS_DIR, p1File)
     const p2Path = path.join(PREVIEWS_DIR, p2File)
 
-    // 防重複快取機制：兩頁縮圖都存在時直接略過
     if (fs.existsSync(p1Path) && fs.existsSync(p2Path)) {
         return [`/previews/${p1File}`, `/previews/${p2File}`]
     }
@@ -85,10 +152,8 @@ async function generatePdfPreviews(pdfFilePath: string, baseName: string): Promi
         })
         const page = await browser.newPage()
 
-        // 讀取本機 PDF 檔案為 Base64
         const pdfBase64 = fs.readFileSync(pdfFilePath).toString('base64')
 
-        // 載入一個內嵌 PDF.js 的輕量 HTML 頁面
         const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -154,10 +219,8 @@ async function generatePdfPreviews(pdfFilePath: string, baseName: string): Promi
                 continue
             }
 
-            // 在瀏覽器記憶體中畫出該頁
             await page.evaluate((p) => (window as any).renderSinglePage(p), pageNum)
 
-            // 精確抓取 Canvas 節點進行截圖（100% 邊界吻合，無多餘留白或跨頁）
             const canvasElement = await page.$('#pdf-canvas')
             if (canvasElement) {
                 await canvasElement.screenshot({
@@ -185,13 +248,11 @@ async function handleFileProperty(files: any[], prefix: string) {
     const rawUrl = files[0].file?.url || files[0].external?.url
     if (!rawUrl) return { mediaUrl: '', previews: [] }
 
-    // 1. YouTube 外部連結
     if (/youtube\.com|youtu\.be/i.test(rawUrl)) {
         console.log(`  🎬 識別為 YouTube: ${rawUrl}`)
         return { mediaUrl: rawUrl, previews: [] }
     }
 
-    // 2. 判斷副檔名
     const cleanUrl = rawUrl.split('?')[0].toLowerCase()
     let ext = 'pdf'
     if (cleanUrl.endsWith('.png')) ext = 'png'
@@ -221,9 +282,29 @@ async function handleFileProperty(files: any[], prefix: string) {
     }
 }
 
+// 輔助函式：清除標題內的 HTML 標籤並產生錨點 ID
+function createHeadingId(rawText: string): { cleanText: string; id: string } {
+    const cleanText = rawText.replace(/<[^>]*>/g, '').trim()
+    const id = cleanText
+        .toLowerCase()
+        .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+    return { cleanText, id }
+}
+
+// 設定 marked 自訂渲染器（建置期預先為 H1 / H2 加上錨點 ID）
+const buildRenderer = new marked.Renderer()
+buildRenderer.heading = ({ text, depth }: { text: string; depth: number }) => {
+    if (depth === 1 || depth === 2) {
+        const { id } = createHeadingId(text)
+        return `<h${depth} id="${id}" class="article-h${depth}">${text}</h${depth}>`
+    }
+    return `<h${depth}>${text}</h${depth}>`
+}
+
 async function syncNotionPosts() {
     if (!NOTION_DATABASE_ID) return
-    console.log('🔄 開始同步 Notion 文章內容...')
+    console.log('🔄 開始同步 Notion 文章內容（建置期預渲染模式）...')
     const response = await notion.databases.query({
         database_id: NOTION_DATABASE_ID as string,
         filter: {
@@ -233,21 +314,25 @@ async function syncNotionPosts() {
             }
         }
     })
-    const posts = []
+
+    const postsIndex = []
+    const activePostIds = new Set<string>()
 
     for (const page of response.results as any[]) {
         const pageId = page.id
+        activePostIds.add(pageId)
+
         const title = page.properties.Title?.title?.[0]?.plain_text || page.properties.Name?.title?.[0]?.plain_text || '未命名文章'
         const subtitle = page.properties.Subtitle?.rich_text?.[0]?.plain_text || ''
         const category = page.properties.Category?.select?.name || '未分類'
         const date = page.properties.Date?.date?.start || new Date().toISOString().split('T')[0]
         const status = page.properties.Status?.status?.name || page.properties.Status?.select?.name || 'Done'
-
         const color = page.properties.Color?.select?.name || page.properties.Color?.rich_text?.[0]?.plain_text || '#ea580c'
 
         const mdBlocks = await n2m.pageToMarkdown(pageId)
         let mdString = n2m.toMarkdownString(mdBlocks).parent
 
+        // 下載並替換文章內圖片
         const imgRegex = /!\[(.*?)\]\((.*?)\)/g
         let match
         let imgIndex = 0
@@ -270,11 +355,69 @@ async function syncNotionPosts() {
             }
         }
 
-        posts.push({ id: pageId, title, subtitle, category, date, status, color, content: mdString })
+        // 1. 提取階層目錄 (H1 與 H2)
+        const toc: { id: string; text: string; level: number }[] = []
+        mdString.split('\n').forEach((line) => {
+            const hMatch = line.match(/^(#{1,2})\s+(.+)$/)
+            if (hMatch) {
+                const level = hMatch[1].length
+                const { cleanText, id } = createHeadingId(hMatch[2])
+                toc.push({ id, text: cleanText, level })
+            }
+        })
+
+        // 2. 預先將 Markdown 轉成最終 HTML
+        const htmlContent = marked.parse(mdString, { renderer: buildRenderer }) as string
+
+        // 3. 產生乾淨無 HTML 標籤的純文字版本（專供後端 RAG AI 助理檢索用）
+        const plainText = htmlContent
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/\s+/g, ' ')
+            .trim()
+
+        // 4. 寫入單篇文章獨立檔案：public/posts/[pageId].json
+        const postDetail = {
+            id: pageId,
+            title,
+            subtitle,
+            category,
+            date,
+            status,
+            color,
+            toc,
+            htmlContent,
+            plainText
+        }
+        fs.writeFileSync(
+            path.join(POSTS_DETAIL_DIR, `${pageId}.json`),
+            JSON.stringify(postDetail, null, 2),
+            'utf-8'
+        )
+
+        // 5. 加入輕量索引陣列（不含龐大內文）
+        postsIndex.push({ id: pageId, title, subtitle, category, date, status, color })
     }
 
-    fs.writeFileSync(path.join(DATA_DIR, 'posts.json'), JSON.stringify(posts, null, 2), 'utf-8')
-    console.log(`🎉 文章同步完成！共 ${posts.length} 篇`)
+    // 清理已在 Notion 刪除或取消「完成」狀態的舊文章 JSON 檔
+    const existingFiles = fs.readdirSync(POSTS_DETAIL_DIR)
+    for (const file of existingFiles) {
+        if (file.endsWith('.json')) {
+            const fileId = file.replace('.json', '')
+            if (!activePostIds.has(fileId)) {
+                fs.unlinkSync(path.join(POSTS_DETAIL_DIR, file))
+                console.log(`  🗑️ 已清理過期文章檔案: ${file}`)
+            }
+        }
+    }
+
+    // 寫入輕量索引檔：src/data/posts-index.json
+    fs.writeFileSync(path.join(DATA_DIR, 'posts-index.json'), JSON.stringify(postsIndex, null, 2), 'utf-8')
+    console.log(`🎉 文章同步完成！共 ${postsIndex.length} 篇（已產出輕量索引與獨立文章檔）`)
 }
 
 async function syncNotionProjects() {

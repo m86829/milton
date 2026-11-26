@@ -1,0 +1,12 @@
+{
+  "id": "40f3eb21-f1cc-80f6-af08-d649b02954ec",
+  "title": "解決PDF閱讀器上下滾動產生黑屏",
+  "subtitle": "",
+  "category": "個人網站",
+  "date": "2026-11-05",
+  "status": "完成",
+  "color": "#ea580c",
+  "toc": [],
+  "htmlContent": "<h3>一、 核心問題定位與技術取捨</h3><ul>\n<li><strong>捨棄 Canvas 渲染（</strong><code><strong>vue-pdf-embed</strong></code><strong>）</strong>：\n先前嘗試將縮放倍率調高至 6 倍以解決清晰度問題，但由於缺乏原生文字圖層，渲染出來的字體筆畫依然發虛，確認無法達到展示要求。</li>\n<li><strong>回歸原生向量渲染（</strong><code><strong><iframe></strong></code><strong>）</strong>：\n維持瀏覽器內建的原生 PDF 閱讀器，確保簡報中的向量文字邊緣銳利。</li>\n<li><strong>保留左右並排展示架構</strong>：\n確認雙欄同時對照才是作品集的核心價值，放棄單一彈窗或分離檢視的做法。</li>\n</ul>\n<h3>二、 互動層面優化</h3><ol>\n<li><strong>單一跨欄遮罩（一鍵解鎖兩邊）</strong>：</li>\n<li><strong>雙層遮罩流轉邏輯</strong>：</li>\n</ol>\n<h3>三、 效能、防黑屏與進度保留機制</h3><ol>\n<li><strong>徹底解決滾動黑屏與滾輪陷阱</strong>：</li>\n<li><strong>視窗進入預載與自動銷毀（IntersectionObserver）</strong>：</li>\n<li><strong>LRU 記憶體池（上限 10 個 PDF / 5 組專案）</strong>：</li>\n</ol>\n",
+  "plainText": "一、 核心問題定位與技術取捨 捨棄 Canvas 渲染（ vue-pdf-embed ） ： 先前嘗試將縮放倍率調高至 6 倍以解決清晰度問題，但由於缺乏原生文字圖層，渲染出來的字體筆畫依然發虛，確認無法達到展示要求。 回歸原生向量渲染（ ） ： 維持瀏覽器內建的原生 PDF 閱讀器，確保簡報中的向量文字邊緣銳利。 保留左右並排展示架構 ： 確認雙欄同時對照才是作品集的核心價值，放棄單一彈窗或分離檢視的做法。 二、 互動層面優化 單一跨欄遮罩（一鍵解鎖兩邊） ： 雙層遮罩流轉邏輯 ： 三、 效能、防黑屏與進度保留機制 徹底解決滾動黑屏與滾輪陷阱 ： 視窗進入預載與自動銷毀（IntersectionObserver） ： LRU 記憶體池（上限 10 個 PDF / 5 組專案） ："
+}

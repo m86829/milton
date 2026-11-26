@@ -1,0 +1,58 @@
+{
+  "id": "4113eb21-f1cc-80b5-9580-c311e398455a",
+  "title": "將網站部屬上GitHub及Cloudflare",
+  "subtitle": "",
+  "category": "個人網站",
+  "date": "2026-11-07",
+  "status": "完成",
+  "color": "#ea580c",
+  "toc": [
+    {
+      "id": "1-確保最新產出的靜態資料與圖片都有加入版本控制",
+      "text": "1. 確保最新產出的靜態資料與圖片都有加入版本控制",
+      "level": 1
+    },
+    {
+      "id": "2-提交版本",
+      "text": "2. 提交版本",
+      "level": 1
+    },
+    {
+      "id": "3-推送到遠端倉庫",
+      "text": "3. 推送到遠端倉庫",
+      "level": 1
+    },
+    {
+      "id": "1-重新設定-origin-遠端網址",
+      "text": "1. 重新設定 origin 遠端網址",
+      "level": 1
+    },
+    {
+      "id": "2-推送程式碼並設定上游分支-u-代表第一次綁定",
+      "text": "2. 推送程式碼並設定上游分支 (-u 代表第一次綁定)",
+      "level": 1
+    },
+    {
+      "id": "1-將上一次包含-env-的-commit-撤回-檔案內容會完全保留在你的硬碟",
+      "text": "1. 將上一次包含 .env 的 commit 撤回（檔案內容會完全保留在你的硬碟）",
+      "level": 1
+    },
+    {
+      "id": "2-將-env-與-backend-env-從-git-快取移除",
+      "text": "2. 將 .env 與 backend/.env 從 git 快取移除",
+      "level": 1
+    },
+    {
+      "id": "3-重新加入其他檔案-此時-gitignore-會自動略過-env",
+      "text": "3. 重新加入其他檔案（此時 .gitignore 會自動略過 .env）",
+      "level": 1
+    },
+    {
+      "id": "4-重新提交-這次不會包含任何金鑰",
+      "text": "4. 重新提交（這次不會包含任何金鑰）",
+      "level": 1
+    }
+  ],
+  "htmlContent": "<p>原則上，依序輸入以下就可以更新，但若第一次部屬，則需按照下方步驟執行。</p>\n<pre><code class=\"language-plain\"># 1. 確保最新產出的靜態資料與圖片都有加入版本控制\ngit add .\n\n# 2. 提交版本\ngit commit -m &quot;更新&quot;\n\n# 3. 推送到遠端倉庫\ngit push origin main\n</code></pre>\n<h3>步驟 1：確認 GitHub 上是否有建立儲存庫</h3><ol>\n<li>開啟瀏覽器登入 GitHub，前往 <a href=\"https://github.com/new\" target=\"_blank\" rel=\"noopener noreferrer\">https://github.com/new</a>。</li>\n<li>確認 <strong>Repository name</strong> 填寫為 <code>milton</code>。</li>\n<li>不需要勾選「Add a README file」或「.gitignore」（因為本機已經有了）。</li>\n<li>點選 <strong>Create repository</strong>。</li>\n</ol>\n<h3>步驟 2：重新綁定正確的遠端網址並推送</h3><pre><code class=\"language-plain\"># 1. 重新設定 origin 遠端網址\ngit remote set-url origin https://github.com/m86829/milton.git\n\n# 2. 推送程式碼並設定上游分支 (-u 代表第一次綁定)\ngit push -u origin main\n</code></pre>\n<p>輸入#2，可能導致commit 不小心把包含金鑰的機密檔案包了進去</p>\n<h3>步驟 3：確保 <code>.env</code> 已加入 <code>.gitignore</code></h3><p>.<code>.gitignore</code> 檔案中請寫入這三行:</p>\n<pre><code class=\"language-plain\">.env\n*.env\nbackend/.env\n</code></pre>\n<h3>步驟 4：從 Git 追蹤快取中移除 <code>.env</code>（但保留本機檔案）</h3><p>終端機依序執行以下:</p>\n<pre><code class=\"language-plain\"># 1. 將上一次包含 .env 的 commit 撤回（檔案內容會完全保留在你的硬碟）\ngit reset HEAD~1\n\n# 2. 將 .env 與 backend/.env 從 git 快取移除\ngit rm --cached .env -f\ngit rm --cached backend/.env -f\n\n# 3. 重新加入其他檔案（此時 .gitignore 會自動略過 .env）\ngit add .\n\n# 4. 重新提交（這次不會包含任何金鑰）\ngit commit -m &quot;更新&quot;\n</code></pre>\n<h3>步驟 5：重新推送到 GitHub</h3><pre><code class=\"language-plain\">git push -u origin main\n</code></pre>\n<h3>步驟 6：部屬在Cloudflare</h3><p><strong>一、前往 Cloudflare 建立 Pages 專案</strong></p>\n<ol>\n<li>開啟瀏覽器進入 <a href=\"https://dash.cloudflare.com/\" target=\"_blank\" rel=\"noopener noreferrer\">Cloudflare Dashboard</a>。</li>\n<li>點選左側選單的 <strong>Workers &amp; Pages</strong>。</li>\n<li>點選 <strong>Create application</strong>，並從底下切換至 <strong>Pages</strong> 分頁。</li>\n<li>選擇 <strong>Connect to Git 或 Import an existing Git repository</strong>。</li>\n</ol>\n<p><img src=\"/images/notion/4113eb21-f1cc-80b5-9580-c311e398455a-1.png\" alt=\"image.png\"></p>\n<p><img src=\"https://prod-files-secure.s3.us-west-2.amazonaws.com/31682f85-b904-4805-902e-18126780c624/07cf5296-f872-428c-8e0c-15ffbedbbe4a/image.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;X-Amz-Credential=ASIAZI2LB4666T2RO7OF%2F20261126%2Fus-west-2%2Fs3%2Faws4_request&amp;X-Amz-Date=20261126T063643Z&amp;X-Amz-Expires=3600&amp;X-Amz-Security-Token=IQoJb3JpZ2luX2VjEO3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJHMEUCIEILmaMmWuTVT9UZAPY7GQTgpXUaUFwrdRqsgNGA7f6XAiEAjFEUmtbjG31wox0oYeuiElUyzo5J56cjIut2QOB9jZUqiAQItf%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2Mzc0MjMxODM4MDUiDGEfheC5Pyhj71BMpyrcA%2FAYu4bPNffWqh%2BgDfU7oKOBdfqwCxpn6r3%2B75NJWDqHfNXtgu7oscxY5FCYdTg5Ok3LHsN%2BT23QVd81TWNSVbFaz8fLpjN8W%2FwY4%2F%2BhY4BVRxyXOFahoDzCYjfETfXUZMStFNNDR2gaLNhqywuLWCmpJM686VTp4upelR7zC5ckhl4tt5IoM%2FWxzfgqmsJlNLgHogldeglXT8S0AG2ATTgMi2Jnvrod1F73XkMlWCHExzFgJIFf3jMcalJ8%2FAezlxhTMd6oHesWRsjjADWYLTEa58kIso%2Fi%2B7gy5nE%2FQlgtPGKwBaWXl8nE%2BUJfzQ58O6jqFERHbjcqUo4Z%2BRXmWftt90FV3LZ%2F8NKZFYTRkfiIx9XZPjmFSs1lTdZQCtdZso9Ul%2BYCPlJDP8xEVS8tHDCIShR12fjc3pL3GsdQeIQbfWkvUc6weLX9ozBQ8RYcLVcINIUSCG8MG3YIsP3QKhAOxSo1qGK0R1eXzLZrf5i7826y274ETKcKtpU357cptSuK%2FjP20tE%2FvRjcBqjZftmiUcOnQRUlZZ41fy%2BNK%2FrYRzTDyjvYEFrd4P3DUw2PimtVsQRyl7MQARrw2E8NlXBME1W6cE1HoA7dGJorr1xtlahbnVjikPBly5nZMJ%2FwntgGOqUBMCeNpbEb456JkfZptfx39KbuWdN7cvHUtVuiDo9dr2GkRYVQ19nMVq8V68YfPU675N6mATdS8JpC3i5iEGtg5RoOMo%2FMxo%2Bxsu53kIOqGd%2FhlbmkSnYO%2Fk%2FGzJ%2BU45Un%2F2TkG4tSPw0VuPcd8RWgReHzECr0D3u0IsH0aSIERB2wyrRgkqCMFrkobwNTc%2BdIckLPbH3aSWhhyJzDCn3ErKAQhsqf&amp;X-Amz-Signature=bb89b05f7ec8ba9e152419047ea24b84d4d962145b288af8a403678e49d14a63&amp;X-Amz-SignedHeaders=host&amp;x-amz-checksum-mode=ENABLED&amp;x-id=GetObject\" alt=\"image.png\"></p>\n<p><strong>二、授權與選擇儲存庫</strong></p>\n<ol>\n<li>選擇你的 GitHub 帳號 <code>m86829</code>。   </li>\n<li>勾選剛才推上去的 <code>milton</code> 專案，點選 <strong>Begin setup</strong>。   <strong></li>\n<li>設定建置參數（Build Settings）</strong></li>\n</ol>\n<p><strong>三、在設定頁面填入以下資訊：</strong>\n• <strong>Project name</strong>：可維持 <code>milton</code>（這會決定你的網址前綴，例如 <code>milton.pages.dev</code>）。\n• <strong>Production branch</strong>：選擇 <code>main</code>。<br>• <strong>Framework preset</strong>：選擇 <strong>Vue</strong> 或 <strong>Vite</strong>。\n• <strong>Build command</strong>：<code>npm run build</code>\n• <strong>Build output directory</strong>：<code>dist</code></p>\n<p><strong>四、點選 Deploy 上線</strong>\n點擊底部的 <strong>Save and Deploy</strong>，Cloudflare Pages 就會開始拉取程式碼並自動執行建置。大約 1 到 2 分鐘建置完成後，它就會產出一個 <code>*.pages.dev</code> 網址，點進去就能看到完全由 Notion 驅動的成果了！</p>\n",
+  "plainText": "原則上，依序輸入以下就可以更新，但若第一次部屬，則需按照下方步驟執行。 # 1. 確保最新產出的靜態資料與圖片都有加入版本控制 git add . # 2. 提交版本 git commit -m \"更新\" # 3. 推送到遠端倉庫 git push origin main 步驟 1：確認 GitHub 上是否有建立儲存庫 開啟瀏覽器登入 GitHub，前往 https://github.com/new 。 確認 Repository name 填寫為 milton 。 不需要勾選「Add a README file」或「.gitignore」（因為本機已經有了）。 點選 Create repository 。 步驟 2：重新綁定正確的遠端網址並推送 # 1. 重新設定 origin 遠端網址 git remote set-url origin https://github.com/m86829/milton.git # 2. 推送程式碼並設定上游分支 (-u 代表第一次綁定) git push -u origin main 輸入#2，可能導致commit 不小心把包含金鑰的機密檔案包了進去 步驟 3：確保 .env 已加入 .gitignore . .gitignore 檔案中請寫入這三行: .env *.env backend/.env 步驟 4：從 Git 追蹤快取中移除 .env （但保留本機檔案） 終端機依序執行以下: # 1. 將上一次包含 .env 的 commit 撤回（檔案內容會完全保留在你的硬碟） git reset HEAD~1 # 2. 將 .env 與 backend/.env 從 git 快取移除 git rm --cached .env -f git rm --cached backend/.env -f # 3. 重新加入其他檔案（此時 .gitignore 會自動略過 .env） git add . # 4. 重新提交（這次不會包含任何金鑰） git commit -m \"更新\" 步驟 5：重新推送到 GitHub git push -u origin main 步驟 6：部屬在Cloudflare 一、前往 Cloudflare 建立 Pages 專案 開啟瀏覽器進入 Cloudflare Dashboard 。 點選左側選單的 Workers & Pages 。 點選 Create application ，並從底下切換至 Pages 分頁。 選擇 Connect to Git 或 Import an existing Git repository 。 二、授權與選擇儲存庫 選擇你的 GitHub 帳號 m86829 。 勾選剛才推上去的 milton 專案，點選 Begin setup 。 設定建置參數（Build Settings） 三、在設定頁面填入以下資訊： • Project name ：可維持 milton （這會決定你的網址前綴，例如 milton.pages.dev ）。 • Production branch ：選擇 main 。 • Framework preset ：選擇 Vue 或 Vite 。 • Build command ： npm run build • Build output directory ： dist 四、點選 Deploy 上線 點擊底部的 Save and Deploy ，Cloudflare Pages 就會開始拉取程式碼並自動執行建置。大約 1 到 2 分鐘建置完成後，它就會產出一個 *.pages.dev 網址，點進去就能看到完全由 Notion 驅動的成果了！"
+}

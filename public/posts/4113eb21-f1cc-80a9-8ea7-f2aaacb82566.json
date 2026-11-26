@@ -1,0 +1,12 @@
+{
+  "id": "4113eb21-f1cc-80a9-8ea7-f2aaacb82566",
+  "title": "常用指令",
+  "subtitle": "",
+  "category": "隨筆",
+  "date": "2026-11-08",
+  "status": "完成",
+  "color": "#0025E0",
+  "toc": [],
+  "htmlContent": "<table>\n<thead>\n<tr>\n<th>說明</th>\n<th>指令</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>修改過的檔案加入暫存區</td>\n<td>git add .</td>\n</tr>\n<tr>\n<td>暫存區的檔案正式存成一個「版本紀錄（Commit）」</td>\n<td>git commit -m “刷新點…&quot;</td>\n</tr>\n<tr>\n<td>本地的提交紀錄推送（上傳）到遠端儲存庫</td>\n<td>git push origin main</td>\n</tr>\n<tr>\n<td>Notion 手動更新</td>\n<td>npm run sync:notion</td>\n</tr>\n<tr>\n<td>電腦模擬</td>\n<td>npm run dev</td>\n</tr>\n<tr>\n<td>手機模擬</td>\n<td>npm run dev -- --host</td>\n</tr>\n</tbody></table>\n",
+  "plainText": "說明 指令 修改過的檔案加入暫存區 git add . 暫存區的檔案正式存成一個「版本紀錄（Commit）」 git commit -m “刷新點…\" 本地的提交紀錄推送（上傳）到遠端儲存庫 git push origin main Notion 手動更新 npm run sync:notion 電腦模擬 npm run dev 手機模擬 npm run dev -- --host"
+}

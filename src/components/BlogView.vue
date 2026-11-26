@@ -1,32 +1,36 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { marked } from 'marked'
-import postsData from '../data/posts.json'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import postsIndexData from '../data/posts-index.json'
 
-// 🌟 新增：通知外層父容器 (App.vue) 是否需要鎖定/解鎖水平切換
+// 通知外層父容器 (App.vue) 是否需要鎖定/解鎖水平切換
 const emit = defineEmits<{
   (e: 'toggle-lock-scroll', locked: boolean): void
 }>()
 
-interface Post {
+interface PostMeta {
   id: string
   title: string
   subtitle?: string
   category: string
   date: string
   status: string
-  color?: string  // 新增此欄位
-  content: string
+  color?: string
 }
 
 interface TocItem {
   id: string
   text: string
+  level: number
 }
 
-// 嚴格依照日期 (Date) 由新到舊排序
-const posts = ref<Post[]>(
-  [...(postsData as Post[])].sort((a, b) => {
+interface PostDetail extends PostMeta {
+  toc: TocItem[]
+  htmlContent: string
+}
+
+// 嚴格依照日期 (Date) 由新到舊排序（讀取輕量索引檔）
+const posts = ref<PostMeta[]>(
+  [...(postsIndexData as PostMeta[])].sort((a, b) => {
     return new Date(b.date).getTime() - new Date(a.date).getTime()
   })
 )
@@ -48,7 +52,7 @@ const categories = computed(() => {
 // 建立分類名稱與顏色的對應字典
 const categoryColorMap = computed(() => {
   const map: Record<string, string> = {
-    '全部': '#ea580c' // 「全部」維持主題橘
+    '全部': '#ea580c'
   }
   posts.value.forEach((p) => {
     if (p.category && p.color && !map[p.category]) {
@@ -58,7 +62,6 @@ const categoryColorMap = computed(() => {
   return map
 })
 
-// 取得分類對應顏色（若未設定則回退為橘色）
 function getCategoryColor(cat: string): string {
   return categoryColorMap.value[cat] || '#ea580c'
 }
@@ -71,15 +74,21 @@ const filteredPosts = computed(() => {
   return posts.value.filter((p) => p.category === activeCategory.value)
 })
 
-// 當前點選閱讀的文章 ID
+// 當前點選閱讀的文章 ID 與載入狀態
 const selectedPostId = ref<string | null>(null)
+const currentDetail = ref<PostDetail | null>(null)
+const isLoadingPost = ref<boolean>(false)
+
+// 記憶體快取：已點擊閱讀過的文章直接快取，重複點開零網路延遲
+const detailCache = new Map<string, PostDetail>()
 
 // 當前選中的索引 (依全體文章計算前後篇)
 const currentIndex = computed(() => {
   return posts.value.findIndex((p) => p.id === selectedPostId.value)
 })
 
-const currentPost = computed(() => {
+// 列表基本資料（載入內文瞬間也能先顯示標題與分類）
+const currentMeta = computed(() => {
   if (currentIndex.value === -1) return null
   return posts.value[currentIndex.value]
 })
@@ -100,58 +109,63 @@ const nextPost = computed(() => {
   return null
 })
 
-// 解析 Markdown H2 標題產生目錄 (TOC)
+// 直接讀取預渲染好的目錄與 HTML
 const tocList = computed<TocItem[]>(() => {
-  if (!currentPost.value) return []
-  const headings: TocItem[] = []
-  const lines = currentPost.value.content.split('\n')
-
-  lines.forEach((line) => {
-    const match = line.match(/^##\s+(.+)$/)
-    if (match) {
-      const text = match[1].trim()
-      const id = text
-        .toLowerCase()
-        .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-      headings.push({ id, text })
-    }
-  })
-  return headings
+  return currentDetail.value?.toc || []
 })
 
-// 將 Markdown 轉為 HTML，並為 H2 加上 id 供錨點跳轉
 const renderedContent = computed(() => {
-  if (!currentPost.value) return ''
+  return currentDetail.value?.htmlContent || ''
+})
 
-  const renderer = new marked.Renderer()
-  renderer.heading = ({ text, depth }: { text: string; depth: number }) => {
-    if (depth === 2) {
-      const id = text
-        .toLowerCase()
-        .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-      return `<h2 id="${id}" class="article-h2">${text}</h2>`
-    }
-    return `<h${depth}>${text}</h${depth}>`
+// 點選文章：按需動態載入 public/posts/[id].json
+async function selectPost(id: string) {
+  selectedPostId.value = id
+  isBlogVisible.value = true
+  emit('toggle-lock-scroll', true)
+  window.scrollTo({ top: 0, behavior: 'instant' })
+  requestAnimationFrame(() => {
+    updateSidebarPosition()
+  })
+
+  // 若記憶體已有快取，直接秒開
+  if (detailCache.has(id)) {
+    currentDetail.value = detailCache.get(id)!
+    return
   }
 
-  return marked.parse(currentPost.value.content, { renderer })
-})
+  currentDetail.value = null
+  // 🌟 若在 150ms 內就抓完資料，就不顯示「載入中」避免畫面閃爍
+  const loadingTimer = setTimeout(() => {
+    if (!currentDetail.value) isLoadingPost.value = true
+  }, 150)
 
-function selectPost(id: string) {
-  selectedPostId.value = id
-  emit('toggle-lock-scroll', true)
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  try {
+    const res = await fetch(`/posts/${id}.json`)
+    if (!res.ok) throw new Error(`無法載入文章內容 (HTTP ${res.status})`)
+    const data: PostDetail = await res.json()
+    detailCache.set(id, data)
+    // 確認使用者目前仍停留在同一篇文章
+    if (selectedPostId.value === id) {
+      currentDetail.value = data
+    }
+  } catch (err) {
+    console.error('載入文章失敗:', err)
+  } finally {
+    if (selectedPostId.value === id) {
+      isLoadingPost.value = false
+    }
+  }
 }
 
 function backToList() {
   selectedPostId.value = null
+  currentDetail.value = null
   emit('toggle-lock-scroll', false)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-// 🌟 手勢向右滑動返回文章列表 (Swipe to Back)
+// 手勢向右滑動返回文章列表 (Swipe to Back)
 let touchStartX = 0
 let touchStartY = 0
 
@@ -167,7 +181,6 @@ function handleTouchEnd(e: TouchEvent) {
   const diffX = touchEndX - touchStartX
   const diffY = touchEndY - touchStartY
 
-  // 水平向右滑動大於 70px，且垂直偏移小於 60px（確認不是上下滑動看文章）
   if (diffX > 70 && Math.abs(diffY) < 60) {
     backToList()
   }
@@ -179,6 +192,55 @@ function scrollToHeading(id: string) {
     el.scrollIntoView({ behavior: 'smooth' })
   }
 }
+
+// 動態計算左側目錄的頂部距離，並偵測 Blog 分頁是否在目前螢幕中
+const sidebarTop = ref<number>(360)
+const isBlogVisible = ref<boolean>(true)
+let visibilityObserver: IntersectionObserver | null = null
+let isTicking = false
+
+function updateSidebarPosition() {
+  if (window.innerWidth <= 900 || isTicking) return
+  isTicking = true
+  requestAnimationFrame(() => {
+    const container = document.querySelector('.blog-container')
+    if (container) {
+      const rectTop = container.getBoundingClientRect().top
+      sidebarTop.value = Math.max(100, rectTop + 40)
+    }
+    isTicking = false
+  })
+}
+
+onMounted(() => {
+  updateSidebarPosition()
+  window.addEventListener('scroll', updateSidebarPosition, { passive: true })
+  window.addEventListener('resize', updateSidebarPosition, { passive: true })
+
+  // 監聽 Blog 區塊是否還在目前視窗內（切換去別的分頁時自動隱藏目錄）
+  const container = document.querySelector('.blog-container')
+  if (container) {
+    visibilityObserver = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        const inHorizontalView =
+          entry.boundingClientRect.right > 50 &&
+          entry.boundingClientRect.left < window.innerWidth - 50
+        isBlogVisible.value = entry.isIntersecting && inHorizontalView
+      },
+      { threshold: 0 }
+    )
+    visibilityObserver.observe(container)
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', updateSidebarPosition)
+  window.removeEventListener('resize', updateSidebarPosition)
+  if (visibilityObserver) {
+    visibilityObserver.disconnect()
+  }
+})
 </script>
 
 <template>
@@ -219,18 +281,16 @@ function scrollToHeading(id: string) {
           class="dense-post-row"
           @click="selectPost(post.id)"
         >
-          <!-- 左側欄：適度拉開間距並收窄欄位 -->
           <div class="row-left-col">
-            <span 
-            class="row-category" 
-            :style="{ color: post.color || '#ea580c' }"
-          >
-            {{ post.category }}
-          </span>
+            <span
+              class="row-category"
+              :style="{ color: post.color || '#ea580c' }"
+            >
+              {{ post.category }}
+            </span>
             <span class="row-date">{{ post.date }}</span>
           </div>
 
-          <!-- 中間欄：主標題 + 副標題摘要 -->
           <div class="row-main-col">
             <h3 class="row-title">{{ post.title }}</h3>
             <p v-if="post.subtitle" class="row-subtitle">
@@ -242,27 +302,32 @@ function scrollToHeading(id: string) {
     </div>
 
     <!-- 2. 文章閱讀內頁 -->
-    <div 
-      v-else 
+    <div
+      v-else
       class="post-detail-layout"
       @touchstart.passive="handleTouchStart"
       @touchend.passive="handleTouchEnd"
     >
-      <!-- 左側固定目錄欄 (Sticky Sidebar) -->
-      <aside class="detail-sidebar">
-        <!-- 置頂返回按鈕 -->
+      <!-- 左側固定目錄欄 -->
+      <aside
+        v-show="isBlogVisible"
+        class="detail-sidebar"
+        :style="{
+          top: `${sidebarTop}px`,
+          maxHeight: `calc(100vh - ${sidebarTop + 30}px)`
+        }"
+      >
         <button class="back-link-btn" @click="backToList">
           ← 回所有文章
         </button>
 
-        <!-- 這篇的段落目錄 -->
         <div v-if="tocList.length > 0" class="toc-wrapper">
           <div class="toc-heading">這篇的段落</div>
           <nav class="toc-nav">
             <a
               v-for="(item, idx) in tocList"
               :key="idx"
-              class="toc-item"
+              :class="['toc-item', `toc-level-${item.level}`]"
               @click.prevent="scrollToHeading(item.id)"
             >
               {{ item.text }}
@@ -275,25 +340,34 @@ function scrollToHeading(id: string) {
       <main class="detail-main-content">
         <header class="detail-header">
           <div class="post-meta">
-            <span 
+            <span
               class="post-category-tag"
-              :style="{ 
-                backgroundColor: `${currentPost?.color || '#ea580c'}18`, 
-                color: currentPost?.color || '#ea580c' 
+              :style="{
+                backgroundColor: `${currentMeta?.color || '#ea580c'}18`,
+                color: currentMeta?.color || '#ea580c'
               }"
             >
-              {{ currentPost?.category }}
+              {{ currentMeta?.category }}
             </span>
-            <span class="post-date">{{ currentPost?.date }}</span>
+            <span class="post-date">{{ currentMeta?.date }}</span>
           </div>
-          <h1 class="detail-title">{{ currentPost?.title }}</h1>
-          <p v-if="currentPost?.subtitle" class="detail-subtitle">
-            {{ currentPost.subtitle }}
+          <h1 class="detail-title">{{ currentMeta?.title }}</h1>
+          <p v-if="currentMeta?.subtitle" class="detail-subtitle">
+            {{ currentMeta.subtitle }}
           </p>
         </header>
 
-        <!-- Markdown 內文 -->
-        <article class="markdown-body" v-html="renderedContent"></article>
+        <!-- 載入中提示 -->
+        <div v-if="isLoadingPost" class="loading-post-state">
+          文章內容載入中...
+        </div>
+
+        <!-- 預渲染 HTML 內文 -->
+        <article
+          v-else
+          class="markdown-body"
+          v-html="renderedContent"
+        ></article>
 
         <!-- 底部上一篇 / 下一篇 -->
         <nav class="post-pagination-section">
@@ -385,7 +459,8 @@ function scrollToHeading(id: string) {
   box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
 }
 
-.empty-state {
+.empty-state,
+.loading-post-state {
   color: #64748b;
   padding: 60px 0;
   text-align: center;
@@ -398,7 +473,7 @@ function scrollToHeading(id: string) {
   flex-direction: column;
   max-width: 960px;
   margin: 0 auto;
-  border-top: 1px solid #e2e8f0; /* 第一篇文章上方增加一條頂部界線 */
+  border-top: 1px solid #e2e8f0;
 }
 
 .dense-post-row {
@@ -420,22 +495,20 @@ function scrollToHeading(id: string) {
   color: #ea580c;
 }
 
-/* 左側欄：固定分類欄位寬度，確保所有日期的起點絕對垂直切齊 */
 .row-left-col {
   width: 220px;
   flex-shrink: 0;
   display: flex;
   flex-direction: row;
   align-items: center;
- justify-content: center;     /* 改回水平置中 */
+  justify-content: center;
   align-self: center;
-  gap: 40px;                   /* 分類與日期之間的固定間距 */
+  gap: 40px;
 }
 
-/* 分類：固定 64px 寬度並靠右對齊（或 text-align: left） */
 .row-category {
-  width: 80px;                 /* 固定寬度，不論 2 字或 4 字都不影響後方日期的位置 */
-  text-align: center;           /* 靠右對齊日期，形成規整邊界 */
+  width: 80px;
+  text-align: center;
   flex-shrink: 0;
   font-size: 0.85rem;
   color: #ea580c;
@@ -443,7 +516,6 @@ function scrollToHeading(id: string) {
   white-space: nowrap;
 }
 
-/* 日期：次要灰字 */
 .row-date {
   font-size: 0.85rem;
   color: #64748b;
@@ -451,7 +523,6 @@ function scrollToHeading(id: string) {
   white-space: nowrap;
 }
 
-/* 中間欄：標題與副標題 */
 .row-main-col {
   flex: 1;
   min-width: 0;
@@ -473,29 +544,29 @@ function scrollToHeading(id: string) {
   margin: 0;
 }
 
-/* ==================== 閱讀內頁兩欄 Sticky 配置 ==================== */
+/* ==================== 閱讀內頁兩欄 Fixed 配置 ==================== */
 .post-detail-layout {
-  display: flex;
-  align-items: flex-start;
-  gap: 56px;
+  display: block;
   position: relative;
   width: 100%;
-  overscroll-behavior-x: contain; /* 🌟 新增：防止水平滾動手勢傳導給外層 */
-  touch-action: pan-y;           /* 🌟 新增：手機觸碰只響應垂直上下滑動 */
+  padding-left: 340px;
+  box-sizing: border-box;
+  overscroll-behavior-x: contain;
+  touch-action: pan-y;
 }
 
 .detail-sidebar {
-  position: -webkit-sticky;
-  position: sticky;
+  position: fixed;
   top: 100px;
-  width: 320px;
-  flex-shrink: 0;
+  left: max(24px, calc((100vw - 1200px) / 2 + 24px));
+  width: 290px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  max-height: calc(100vh - 120px);
+  gap: 16px;
+  max-height: calc(100vh - 130px);
   overflow-y: auto;
   padding-right: 12px;
+  z-index: 20;
 }
 
 .back-link-btn {
@@ -521,7 +592,7 @@ function scrollToHeading(id: string) {
   flex-direction: column;
   gap: 12px;
   border-top: 1px solid #e2e8f0;
-  padding-top: 20px;
+  padding-top: 16px;
 }
 
 .toc-heading {
@@ -535,21 +606,34 @@ function scrollToHeading(id: string) {
 .toc-nav {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .toc-item {
-  font-size: 14px;
-  line-height: 1.55;
-  color: #475569;
+  line-height: 1.5;
   text-decoration: none;
   cursor: pointer;
   transition: color 0.15s ease;
   word-break: break-word;
 }
 
+.toc-level-1 {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-top: 6px;
+}
+
+.toc-level-2 {
+  font-size: 13.5px;
+  font-weight: 400;
+  color: #64748b;
+  padding-left: 14px;
+  border-left: 2px solid #e2e8f0;
+}
+
 .toc-item:hover {
-  color: #059669;
+  color: #ea580c;
 }
 
 /* ==================== 內文樣式 ==================== */
@@ -599,15 +683,24 @@ function scrollToHeading(id: string) {
   margin: 0;
 }
 
+:deep(.article-h1) {
+  scroll-margin-top: 110px;
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 52px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
 :deep(.article-h2) {
   scroll-margin-top: 110px;
-  font-size: 24px;
+  font-size: 21px;
   font-weight: 700;
-  color: #0f172a;
-  margin-top: 48px;
-  margin-bottom: 18px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  margin-top: 36px;
+  margin-bottom: 16px;
 }
 
 :deep(.markdown-body p) {
@@ -636,7 +729,6 @@ function scrollToHeading(id: string) {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 }
 
-/* 文章容器：限制寬度並防止向外撐開 */
 :deep(.markdown-body) {
   width: 100%;
   max-width: 100%;
@@ -645,7 +737,6 @@ function scrollToHeading(id: string) {
   word-break: break-word;
 }
 
-/* 1. 程式碼區塊：寬度鎖死 100%，超出時內部橫向捲動 */
 :deep(.markdown-body pre) {
   background: #0f172a;
   color: #f8fafc;
@@ -657,7 +748,6 @@ function scrollToHeading(id: string) {
   margin: 24px 0;
 }
 
-/* 2. 行內代碼：允許自動折行，避免長單字/函式名稱衝破螢幕 */
 :deep(.markdown-body :not(pre) > code) {
   background: #f1f5f9;
   color: #0f172a;
@@ -674,7 +764,6 @@ function scrollToHeading(id: string) {
   padding: 0;
 }
 
-/* 3. 表格（F12 撐到 957px 的主因）：超出寬度時在表格內水平捲動 */
 :deep(.markdown-body table) {
   display: block !important;
   width: 100% !important;
@@ -691,7 +780,6 @@ function scrollToHeading(id: string) {
   border: 1px solid #e2e8f0;
 }
 
-/* 4. 引用區塊 (Callout / Blockquote) 防溢出 */
 :deep(.markdown-body blockquote) {
   max-width: 100%;
   box-sizing: border-box;
@@ -760,11 +848,10 @@ function scrollToHeading(id: string) {
 /* ==================== 行動端響應式降級 ==================== */
 @media (max-width: 900px) {
   .blog-container {
-    padding: 20px 16px 120px !important; /* 底部 120px 安全間距，防止被 AI 助理按鈕擋住 */
+    padding: 20px 16px 120px !important;
     overflow-x: hidden !important;
   }
 
-  /* 文章主標題：流式字體無段微調 + 強制折行，解決「AI助理(RAG)」破版 */
   .detail-title {
     font-size: clamp(1.4rem, 5.5vw, 2rem) !important;
     line-height: 1.35 !important;
@@ -786,6 +873,7 @@ function scrollToHeading(id: string) {
   .post-detail-layout {
     flex-direction: column;
     gap: 24px;
+    padding-left: 0 !important;
   }
 
   .detail-sidebar {

@@ -1,0 +1,146 @@
+[
+  {
+    "id": "4133eb21-f1cc-8037-b769-c801f64fc4ef",
+    "title": "《納瓦爾寶典》-如何省己",
+    "subtitle": "",
+    "category": "我的讀書筆記",
+    "date": "2026-11-11",
+    "status": "完成",
+    "color": "#F500D8"
+  },
+  {
+    "id": "4133eb21-f1cc-80ab-9296-dc3d6d8f8f5d",
+    "title": "如何加快喚醒免費版的Render(Rag)?",
+    "subtitle": "",
+    "category": "個人網站",
+    "date": "2026-11-09",
+    "status": "完成",
+    "color": "#ea580c"
+  },
+  {
+    "id": "4133eb21-f1cc-80e1-9215-d0296da7a856",
+    "title": "從 OOM 崩潰到 60fps：Vue 3 作品集在行動端的 PDF 渲染效能死鬥記",
+    "subtitle": "",
+    "category": "個人網站",
+    "date": "2026-11-09",
+    "status": "完成",
+    "color": "#ea580c"
+  },
+  {
+    "id": "4123eb21-f1cc-800d-a3c6-c410408cee40",
+    "title": "踩坑紀錄:Node.js 自動轉 PDF 封面文字破碎與比例失真",
+    "subtitle": "",
+    "category": "個人網站",
+    "date": "2026-11-08",
+    "status": "完成",
+    "color": "#ea580c"
+  },
+  {
+    "id": "4123eb21-f1cc-80ce-a114-fc2381530806",
+    "title": "RAG AI 助理的四重資安防護指南",
+    "subtitle": "",
+    "category": "個人網站",
+    "date": "2026-11-08",
+    "status": "完成",
+    "color": "#ea580c"
+  },
+  {
+    "id": "4113eb21-f1cc-80a9-8ea7-f2aaacb82566",
+    "title": "常用指令",
+    "subtitle": "",
+    "category": "隨筆",
+    "date": "2026-11-08",
+    "status": "完成",
+    "color": "#0025E0"
+  },
+  {
+    "id": "4113eb21-f1cc-80d4-97e4-ef3788bdfa16",
+    "title": "修復Notion無法自動更新至GitHub",
+    "subtitle": "",
+    "category": "個人網站",
+    "date": "2026-11-08",
+    "status": "完成",
+    "color": "#ea580c"
+  },
+  {
+    "id": "4113eb21-f1cc-8064-9c16-c7969a793ac1",
+    "title": "目前個人網頁的主要架構",
+    "subtitle": "",
+    "category": "隨筆",
+    "date": "2026-11-08",
+    "status": "完成",
+    "color": "#0025E0"
+  },
+  {
+    "id": "4113eb21-f1cc-807e-b9c1-d0e981223edf",
+    "title": "如何將AI助理(RAG)架到Render?",
+    "subtitle": "",
+    "category": "個人網站",
+    "date": "2026-11-07",
+    "status": "完成",
+    "color": "#ea580c"
+  },
+  {
+    "id": "4113eb21-f1cc-80b5-9580-c311e398455a",
+    "title": "將網站部屬上GitHub及Cloudflare",
+    "subtitle": "",
+    "category": "個人網站",
+    "date": "2026-11-07",
+    "status": "完成",
+    "color": "#ea580c"
+  },
+  {
+    "id": "4113eb21-f1cc-802f-bb2a-d3bf21d6ad92",
+    "title": "打造由 Notion 動態同步系統",
+    "subtitle": "",
+    "category": "個人網站",
+    "date": "2026-11-06",
+    "status": "完成",
+    "color": "#ea580c"
+  },
+  {
+    "id": "4103eb21-f1cc-8003-a877-d9de0ddc3f47",
+    "title": "從硬編碼到完全解耦：打造由 Notion 驅動的 Metro-Style 向量時間軸",
+    "subtitle": "",
+    "category": "個人網站",
+    "date": "2026-11-07",
+    "status": "完成",
+    "color": "#ea580c"
+  },
+  {
+    "id": "4103eb21-f1cc-800d-ab92-e5cde9b8e3ba",
+    "title": "打造個人作品集 RAG 智慧對話助理",
+    "subtitle": "",
+    "category": "個人網站",
+    "date": "2026-11-06",
+    "status": "完成",
+    "color": "#ea580c"
+  },
+  {
+    "id": "40f3eb21-f1cc-80f6-af08-d649b02954ec",
+    "title": "解決PDF閱讀器上下滾動產生黑屏",
+    "subtitle": "",
+    "category": "個人網站",
+    "date": "2026-11-05",
+    "status": "完成",
+    "color": "#ea580c"
+  },
+  {
+    "id": "40c3eb21-f1cc-80b9-933c-d309d80ec27b",
+    "title": "打造 Before vs After 作品集對比系統",
+    "subtitle": "",
+    "category": "個人網站",
+    "date": "2026-11-03",
+    "status": "完成",
+    "color": "#ea580c"
+  },
+  {
+    "id": "40b3eb21-f1cc-80be-9359-fffeeb3b7749",
+    "title": "如何與Gemini協作，達成Notion串接?",
+    "subtitle": "",
+    "category": "個人網站",
+    "date": "2026-11-01",
+    "status": "完成",
+    "color": "#ea580c"
+  }
+]

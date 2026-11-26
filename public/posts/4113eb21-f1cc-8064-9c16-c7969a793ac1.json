@@ -1,0 +1,12 @@
+{
+  "id": "4113eb21-f1cc-8064-9c16-c7969a793ac1",
+  "title": "目前個人網頁的主要架構",
+  "subtitle": "",
+  "category": "隨筆",
+  "date": "2026-11-08",
+  "status": "完成",
+  "color": "#0025E0",
+  "toc": [],
+  "htmlContent": "<p>一、backend </p>\n<p>main.py 負責AI助理，能自動搜尋包含notion更新的文章及milton_knowledge.md</p>\n<p>milton_knowledge.md  包含我給他的知識庫</p>\n<p>requirements.txt 給Render知道有用到啥技術</p>\n<p>二、scripts</p>\n<p>sync-notion.ts notion 用來更新，包含時間軸、個人作品(比對)、文章</p>\n<p>三、src/components</p>\n<p>AboutView.vue  負責About頁面</p>\n<p>SolutionsView.vue 負責Solutions Portfolio頁面</p>\n<p>PortfolioView.vue  負責Work Portfolio頁面</p>\n<p>Personal-PortfolioView.vue 負責Work Portfolio頁面</p>\n<p>BlogView.vue  負責Blog頁面</p>\n<p>四、App.vue 網頁整體頁面</p>\n<p>五、style.css 網頁整體樣式</p>\n",
+  "plainText": "一、backend main.py 負責AI助理，能自動搜尋包含notion更新的文章及milton_knowledge.md milton_knowledge.md 包含我給他的知識庫 requirements.txt 給Render知道有用到啥技術 二、scripts sync-notion.ts notion 用來更新，包含時間軸、個人作品(比對)、文章 三、src/components AboutView.vue 負責About頁面 SolutionsView.vue 負責Solutions Portfolio頁面 PortfolioView.vue 負責Work Portfolio頁面 Personal-PortfolioView.vue 負責Work Portfolio頁面 BlogView.vue 負責Blog頁面 四、App.vue 網頁整體頁面 五、style.css 網頁整體樣式"
+}

@@ -45,25 +45,33 @@ def init_rag_system():
         all_documents.extend(loader.load())
         print("✅ 已載入基礎履歷 milton_knowledge.md")
 
-    # B. 載入 posts.json
-    posts_json_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../src/data/posts.json"))
-    if not os.path.exists(posts_json_path):
-        posts_json_path = "posts.json"
+    # B. 載入 Notion 最新文章（讀取輕量索引 + 單篇文章的乾淨 plainText）
+    base_dir = os.path.dirname(__file__)
+    posts_index_path = os.path.abspath(os.path.join(base_dir, "../src/data/posts-index.json"))
+    posts_detail_dir = os.path.abspath(os.path.join(base_dir, "../public/posts"))
 
-    if os.path.exists(posts_json_path):
+    if os.path.exists(posts_index_path):
         try:
-            with open(posts_json_path, "r", encoding="utf-8") as f:
-                posts_data = json.load(f)
-                for post in posts_data:
-                    title = post.get("title", "")
-                    category = post.get("category", "")
-                    date = post.get("date", "")
-                    content = post.get("content", "")
-                    doc_text = f"【Notion部落格文章】\n標題: {title}\n分類: {category}\n日期: {date}\n內容:\n{content}"
-                    all_documents.append(Document(page_content=doc_text, metadata={"source": "notion_post", "title": title}))
-            print(f"✅ 已成功載入 Notion 最新文章共 {len(posts_data)} 篇！")
+            with open(posts_index_path, "r", encoding="utf-8") as f:
+                posts_index = json.load(f)
+                loaded_count = 0
+                for meta in posts_index:
+                    post_id = meta.get("id", "")
+                    detail_file = os.path.join(posts_detail_dir, f"{post_id}.json")
+                    if os.path.exists(detail_file):
+                        with open(detail_file, "r", encoding="utf-8") as df:
+                            post_detail = json.load(df)
+                            title = post_detail.get("title", "")
+                            category = post_detail.get("category", "")
+                            date = post_detail.get("date", "")
+                            # 優先讀取去除 HTML 標籤的乾淨 plainText
+                            content = post_detail.get("plainText") or post_detail.get("htmlContent", "")
+                            doc_text = f"【Notion部落格文章】\n標題: {title}\n分類: {category}\n日期: {date}\n內容:\n{content}"
+                            all_documents.append(Document(page_content=doc_text, metadata={"source": "notion_post", "title": title}))
+                            loaded_count += 1
+            print(f"✅ 已成功載入 Notion 最新文章共 {loaded_count} 篇（純淨文本模式）！")
         except Exception as e:
-            print(f"⚠️ 載入 posts.json 失敗: {e}")
+            print(f"⚠️ 載入 Notion 文章失敗: {e}")
 
     # C. 載入 projects.json
     projects_json_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../src/data/projects.json"))
@@ -209,7 +217,7 @@ def chat(request: Request, body: ChatRequest):
             "gemini-3.5-flash-lite",  # 第一順位：最快、最不排隊
             "gemini-2.5-flash-lite",  # 第二順位：備援輕量版
             "gemini-3.8-flash",       # 第三順位：新世代高智能主力
-            "gemini-2.5-flash"        # 第四順位：穩定版
+            "gemini-2.5-flash",       # 第四順位：穩定版
             "gemini-embedding-001",
             "gemini-embedding-2",
         ]
