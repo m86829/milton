@@ -13,14 +13,29 @@ function renderMarkdown(content: string) {
 
 // 5 個主分頁的順序定義
 const tabs = ['about', 'solutions', 'home', 'portfolio', 'blog']
-const activeTabIndex = ref(0) // 預設為首頁
+const activeTabIndex = ref(0)
+
+// 🌟 區分桌機版與手機版（900px 為界線）
+const isMobile = ref(false)
+function checkDeviceMode() {
+  const wasMobile = isMobile.value
+  isMobile.value = window.innerWidth <= 900
+  // 若從桌機縮小進入手機版，自動將水平捲軸對齊到當前分頁
+  if (!wasMobile && isMobile.value) {
+    nextTick(() => {
+      if (scrollerRef.value) {
+        scrollerRef.value.scrollLeft = activeTabIndex.value * scrollerRef.value.clientWidth
+      }
+    })
+  }
+}
 
 const scrollerRef = ref<HTMLElement | null>(null)
 const isNavVisible = ref(true)
 let lastScrollY = 0
-let isClickScrolling = false // 避免點擊按鈕平移時與滾動監聽互相干擾
+let isClickScrolling = false
 
-// 🌟 新增：控制在文章詳情頁時是否凍結橫向滑動
+// 控制手機版在文章詳情頁時是否凍結橫向滑動
 const isScrollLocked = ref(false)
 function handleToggleLockScroll(locked: boolean) {
   isScrollLocked.value = locked
@@ -38,38 +53,37 @@ const currentBannerTitle = computed(() => {
 // 點擊頂部導覽按鈕
 function changeTabByIndex(index: number) {
   activeTabIndex.value = index
-  isClickScrolling = true
   
-  if (scrollerRef.value) {
-    const pageWidth = scrollerRef.value.clientWidth // 🌟 使用 clientWidth 消除滾輪差
+  // 🌟 只有在手機版才需要計算水平滑動位置
+  if (isMobile.value && scrollerRef.value) {
+    isClickScrolling = true
+    const pageWidth = scrollerRef.value.clientWidth
     scrollerRef.value.scrollTo({
       left: index * pageWidth,
       behavior: 'smooth'
     })
+    setTimeout(() => {
+      isClickScrolling = false
+    }, 400)
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' })
-
-  setTimeout(() => {
-    isClickScrolling = false
-  }, 400)
 }
 
-// 橫向滑動監聽
+// 手機版橫向滑動監聽
 function handleHorizontalScroll() {
-  if (isClickScrolling || !scrollerRef.value) return
+  if (!isMobile.value || isClickScrolling || !scrollerRef.value) return
   const scrollLeft = scrollerRef.value.scrollLeft
-  const pageWidth = scrollerRef.value.clientWidth // 🌟 使用 clientWidth
+  const pageWidth = scrollerRef.value.clientWidth
   if (pageWidth === 0) return
 
   const newIndex = Math.round(scrollLeft / pageWidth)
-  
   if (newIndex >= 0 && newIndex < tabs.length && newIndex !== activeTabIndex.value) {
     activeTabIndex.value = newIndex
   }
 }
 
-// 智慧偵測垂直滾輪方向（向上顯現、向下隱藏導覽列）
+// 智慧偵測垂直滾輪方向
 function handleScroll() {
   const currentScrollY = window.scrollY
   if (currentScrollY < 50) {
@@ -83,9 +97,10 @@ function handleScroll() {
 }
 
 onMounted(() => { 
+  checkDeviceMode()
+  window.addEventListener('resize', checkDeviceMode)
   window.addEventListener('scroll', handleScroll) 
   
-  // 🌟 網頁一打開，定位在最外層的 ABOUT (Left 0)
   if (scrollerRef.value) {
     scrollerRef.value.scrollLeft = 0
   }
@@ -95,6 +110,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => { 
+  window.removeEventListener('resize', checkDeviceMode)
   window.removeEventListener('scroll', handleScroll) 
 })
 
@@ -206,36 +222,40 @@ async function handleSendMessage() {
       </h1>
     </div>
 
-    <!-- 🌟 核心：橫向分頁捲軸容器（平排 5 個頁面） -->
+    <!-- 🌟 模式 A：桌機版（純粹單頁切換，無水平並排容器，縮小視窗絕對不跑版） -->
+    <main v-if="!isMobile" class="desktop-single-container">
+      <AboutView v-show="activeTabIndex === 0" />
+      <SolutionsView v-show="activeTabIndex === 1" />
+      <PortfolioView v-show="activeTabIndex === 2" />
+      <PersonalPortfolioView v-show="activeTabIndex === 3" />
+      <BlogView v-show="activeTabIndex === 4" @toggle-lock-scroll="handleToggleLockScroll" />
+    </main>
+
+    <!-- 🌟 模式 B：手機/平板版（保留原本的 5 頁左右滑動切換體驗） -->
     <main 
+      v-else
       ref="scrollerRef" 
       class="main-scroller-container" 
       :class="{ 'snap-locked': isScrollLocked }"
       @scroll.passive="handleHorizontalScroll"
     >
-      <!-- 1. ABOUT -->
       <section class="swipe-page-pane">
         <AboutView />
       </section>
 
-      <!-- 2. SOLUTIONS -->
       <section class="swipe-page-pane">
         <SolutionsView />
       </section>
 
-      <!-- 3. WORK PORTFOLIO -->
       <section class="swipe-page-pane">
         <PortfolioView />
       </section>
 
-      <!-- 4. PERSONAL PORTFOLIO -->
       <section class="swipe-page-pane">
         <PersonalPortfolioView />
       </section>
 
-      <!-- 5. BLOG -->
       <section class="swipe-page-pane blog-page-wrapper">
-        <!-- 🌟 接收 BlogView 傳來的鎖定/解鎖通知 -->
         <BlogView @toggle-lock-scroll="handleToggleLockScroll" />
       </section>
     </main>
@@ -307,23 +327,39 @@ async function handleSendMessage() {
 </template>
 
 <style scoped>
-/* 🌟 1. 外層布局限制在 100% 寬度 */
 .designer-layout {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
 }
 
-/* 橫向容器預設（桌機） */
+/* 🌟 桌機版單頁容器：乾淨獨立，沒有水平並排 */
+.desktop-single-container {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 🌟 手機/平板版橫向滑動容器 */
 .main-scroller-container {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
   width: 100% !important;
   max-width: 100% !important;
-  overflow-x: hidden; /* 電腦版平常不需要拖曳捲軸，靠點擊按鈕平移 */
-  overflow-y: visible !important; /* 🌟 核心：桌機版高度隨內容撐開，絕不產生內層垂直滾輪 */
+  overflow-x: scroll !important;
+  overflow-y: hidden !important;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y !important;
+  overscroll-behavior-x: contain;
   box-sizing: border-box;
+}
+
+.main-scroller-container.snap-locked {
+  overflow-x: hidden !important;
+  scroll-snap-type: none !important;
+  touch-action: pan-y !important;
 }
 
 .swipe-page-pane {
@@ -332,32 +368,10 @@ async function handleSendMessage() {
   min-width: 100% !important;
   max-width: 100% !important;
   box-sizing: border-box;
-  overflow-y: visible !important; /* 🌟 確保分頁內容不產生內部滾輪 */
+  overflow-y: visible !important;
   overflow-x: hidden;
-}
-
-/* 🌟 只在行動端（手機/平板）開啟手勢水平吸附捲動 */
-@media (max-width: 900px) {
-  .main-scroller-container {
-    overflow-x: scroll !important;
-    overflow-y: hidden !important;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-x pan-y !important;
-    overscroll-behavior-x: contain;
-  }
-
-  /* 🌟 新增：當處於文章閱讀狀態時，強制關閉橫向滾動與吸附 */
-  .main-scroller-container.snap-locked {
-    overflow-x: hidden !important;
-    scroll-snap-type: none !important;
-    touch-action: pan-y !important;
-  }
-
-  .swipe-page-pane {
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-  }
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
 @media (max-width: 768px) {
@@ -629,7 +643,6 @@ async function handleSendMessage() {
   40% { transform: scale(1); }
 }
 
-/* 🌟 輸入區域：嚴格鎖定寬度與內距，防止溢出邊界 */
 .chat-input-area {
   display: flex !important;
   align-items: center !important;
@@ -642,7 +655,6 @@ async function handleSendMessage() {
   border-top: 1px solid #e2e8f0 !important;
 }
 
-/* 🌟 輸入框：font-size: 16px 徹底防止 iOS 自動放大畫面 */
 .chat-input-area input {
   flex: 1 1 0% !important;
   min-width: 0 !important;
@@ -652,7 +664,7 @@ async function handleSendMessage() {
   padding: 0 10px !important;
   border: 1px solid #cbd5e1 !important;
   border-radius: 8px !important;
-  font-size: 16px !important; /* 核心關鍵：iOS 小於 16px 會觸發整頁放大 */
+  font-size: 16px !important;
   outline: none !important;
   transition: border-color 0.2s ease !important;
 }
@@ -661,7 +673,6 @@ async function handleSendMessage() {
   border-color: #15803d !important;
 }
 
-/* 🌟 發送按鈕：固定寬度 54px，禁止被彈性壓縮 */
 .chat-send-btn {
   flex: 0 0 54px !important;
   width: 54px !important;
@@ -702,7 +713,6 @@ async function handleSendMessage() {
   transform: translateY(16px) scale(0.96);
 }
 
-/* 🌟 手機端微調：縮小視窗寬高，停駐在按鈕左上方且不遮蔽畫面 */
 @media (max-width: 480px) {
   .milton-ai-widget {
     bottom: 20px !important;

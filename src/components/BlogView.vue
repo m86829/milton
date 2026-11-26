@@ -152,6 +152,7 @@ async function selectPost(id: string) {
   } catch (err) {
     console.error('載入文章失敗:', err)
   } finally {
+    clearTimeout(loadingTimer)
     if (selectedPostId.value === id) {
       isLoadingPost.value = false
     }
@@ -200,7 +201,7 @@ let visibilityObserver: IntersectionObserver | null = null
 let isTicking = false
 
 function updateSidebarPosition() {
-  if (window.innerWidth <= 900 || isTicking) return
+  if (window.innerWidth <= 1050 || isTicking) return
   isTicking = true
   requestAnimationFrame(() => {
     const container = document.querySelector('.blog-container')
@@ -846,7 +847,7 @@ onUnmounted(() => {
 }
 
 /* ==================== 行動端響應式降級 ==================== */
-@media (max-width: 900px) {
+@media (max-width: 1050px) {
   .blog-container {
     padding: 20px 16px 120px !important;
     overflow-x: hidden !important;

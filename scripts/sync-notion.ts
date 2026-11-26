@@ -45,12 +45,18 @@ const NOTION_COLOR_MAP: Record<string, string> = {
     red_background: 'background-color: #FDEBEC; padding: 2px 4px; border-radius: 4px;'
 }
 
-// 將 Notion rich_text 轉為精準 HTML（同時解決顏色與 ** 粗體卡住問題）
+// 將 Notion rich_text 轉為精準 HTML（同時解決顏色、** 粗體卡住與 HTML 標籤衝突問題）
 function richTextToHtml(richTexts: any[]): string {
     if (!richTexts || !Array.isArray(richTexts)) return ''
     return richTexts.map((rt) => {
         let text = rt.plain_text || ''
         if (!text) return ''
+
+        // 🌟 核心修復：先將原始純文字中的 < > & 跳脫，防止 <iframe> 等程式碼文字被瀏覽器誤判為真實 HTML 標籤
+        text = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
 
         const ann = rt.annotations || {}
         if (ann.bold) text = `<strong>${text}</strong>`
@@ -66,15 +72,33 @@ function richTextToHtml(richTexts: any[]): string {
     }).join('')
 }
 
-// 覆寫常見區塊的轉換邏輯，保留顏色與樣式
+// 🌟 輔助函式：遞迴取得並縮排所有巢狀子區塊（解決「怎麼克服」底下空心圓點子項目消失的問題）
+async function renderChildrenWithIndent(block: any): Promise<string> {
+    if (!block.has_children) return ''
+    const childBlocks = await n2m.pageToMarkdown(block.id)
+    const childMd = n2m.toMarkdownString(childBlocks).parent
+    if (!childMd) return ''
+    return '\n' + childMd
+        .split('\n')
+        .map((line: string) => (line.trim() ? `  ${line}` : line))
+        .join('\n')
+}
+
+// 覆寫常見區塊的轉換邏輯，保留顏色、樣式與所有巢狀子項目
 n2m.setCustomTransformer('paragraph', async (block: any) => {
-    return richTextToHtml(block.paragraph?.rich_text)
+    const text = richTextToHtml(block.paragraph?.rich_text)
+    const children = await renderChildrenWithIndent(block)
+    return `${text}${children}`
 })
 n2m.setCustomTransformer('bulleted_list_item', async (block: any) => {
-    return `- ${richTextToHtml(block.bulleted_list_item?.rich_text)}`
+    const text = richTextToHtml(block.bulleted_list_item?.rich_text)
+    const children = await renderChildrenWithIndent(block)
+    return `- ${text}${children}`
 })
 n2m.setCustomTransformer('numbered_list_item', async (block: any) => {
-    return `1. ${richTextToHtml(block.numbered_list_item?.rich_text)}`
+    const text = richTextToHtml(block.numbered_list_item?.rich_text)
+    const children = await renderChildrenWithIndent(block)
+    return `1. ${text}${children}`
 })
 n2m.setCustomTransformer('heading_1', async (block: any) => {
     return `# ${richTextToHtml(block.heading_1?.rich_text)}`
@@ -86,7 +110,9 @@ n2m.setCustomTransformer('heading_3', async (block: any) => {
     return `### ${richTextToHtml(block.heading_3?.rich_text)}`
 })
 n2m.setCustomTransformer('quote', async (block: any) => {
-    return `> ${richTextToHtml(block.quote?.rich_text)}`
+    const text = richTextToHtml(block.quote?.rich_text)
+    const children = await renderChildrenWithIndent(block)
+    return `> ${text}${children}`
 })
 
 const IMAGE_DIR = path.resolve(process.cwd(), 'public/images/notion')
